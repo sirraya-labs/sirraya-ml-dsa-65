@@ -18,22 +18,7 @@ pub use ml_dsa_65::MlDsa65;
 // Re-export constants for public use
 pub use constants::{PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 
-// RDFC module - pure Rust RDFC-1.0 canonicalization
-#[cfg(feature = "w3c")]
-pub mod rdfc;
 
-#[cfg(feature = "w3c")]
-pub use rdfc::{
-    // Public API - what users should actually use
-    canonicalize,
-    parse_nquads,
-    IdentifierIssuer,
-    // Remove these private functions:
-    // hash_first_degree_quads,
-    // hash_n_degree_quads,
-    Quad,
-    Term,
-};
 
 // VC Verifier module - JCS-based verification
 #[cfg(feature = "w3c")]
