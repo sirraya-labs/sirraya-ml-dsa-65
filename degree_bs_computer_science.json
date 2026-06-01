@@ -1,25 +1,221 @@
 {
   "@context": [
     "https://www.w3.org/ns/credentials/v2",
-    "https://w3id.org/security/multikey/v1"
+    "https://www.w3.org/ns/credentials/examples/v2",
+    {
+      "DegreeCredential": "https://schema.org/EducationalOccupationalCredential",
+      "alumniOf": "https://schema.org/alumniOf",
+      "degreeType": "https://schema.org/educationalCredentialAwarded",
+      "gpa": "https://schema.org/gpa",
+      "honors": "https://schema.org/honorificSuffix",
+      "major": "https://schema.org/hasCredentialCategory",
+      "thesis": "https://schema.org/workExample"
+    }
   ],
-  "credentialSubject": {
-    "id": "did:example:subject",
-    "name": "Demo Subject"
+  "credentialSchema": {
+    "id": "https://kashmiruniversity.net/schmas/degree-credential-v1.json",
+    "type": "JsonSchema"
   },
-  "id": "urn:uuid:demo-vc",
-  "issuanceDate": "2024-01-01T00:00:00Z",
-  "issuer": "did:key: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",
+  "credentialStatus": {
+    "id": "https://kashmiruniversity.net/credentials/status/15-CS-0892#1",
+    "statusListCredential": "https://kashmiruniversity.net/status/degree-credentials/1",
+    "statusListIndex": "15-CS-0892",
+    "statusPurpose": "revocation",
+    "type": "StatusList2021Entry"
+  },
+  "credentialSubject": {
+    "academicStanding": "First Class with Distinction",
+    "alumniOf": {
+      "department": "Department of Computer Science",
+      "id": "https://www.kashmiruniversity.net",
+      "name": "University of Kashmir"
+    },
+    "awardDate": "2019-07-15",
+    "certifications": [
+      {
+        "issuer": "Oracle Corporation",
+        "name": "Oracle Certified Java Programmer (OCJP)",
+        "year": 2018
+      },
+      {
+        "issuer": "Amazon Web Services",
+        "name": "AWS Certified Cloud Practitioner",
+        "year": 2019
+      }
+    ],
+    "contact": {
+      "email": "amir.mir@alumni.kashmiruniversity.net",
+      "permanentAddress": {
+        "country": "India",
+        "locality": "Srinagar",
+        "postalCode": "190006",
+        "region": "Jammu and Kashmir",
+        "street": "Naseem Bagh, Hazratbal"
+      }
+    },
+    "coursework": {
+      "coreCourses": [
+        "Data Structures and Algorithms",
+        "Database Management Systems",
+        "Operating Systems",
+        "Computer Networks",
+        "Software Engineering",
+        "Theory of Computation",
+        "Compiler Design",
+        "Artificial Intelligence",
+        "Machine Learning Fundamentals",
+        "Distributed Systems",
+        "Cryptography and Network Security"
+      ],
+      "electives": [
+        "Blockchain Technology",
+        "Cloud Computing",
+        "Mobile Application Development",
+        "Web Technologies"
+      ]
+    },
+    "degreeType": {
+      "abbreviation": "BS",
+      "framework": "National Skills Qualification Framework (NSQF)",
+      "name": "Bachelor of Science",
+      "qualificationLevel": "Level 6"
+    },
+    "gpa": {
+      "scale": 10.0,
+      "system": "CGPA",
+      "value": 8.74
+    },
+    "graduationYear": 2019,
+    "honors": [
+      "Dean's List - Academic Excellence (2017-2018)",
+      "Best Final Year Project Award - Department of Computer Science",
+      "Merit Scholarship - J&K State Government (2016-2019)"
+    ],
+    "id": "did:example:amir-hameed-mir-2019",
+    "identifier": [
+      {
+        "issuer": "University of Kashmir",
+        "type": "StudentID",
+        "value": "KU-CS-2015-0892"
+      },
+      {
+        "issuer": "Department of Computer Science",
+        "type": "RollNumber",
+        "value": "15-CS-0892"
+      }
+    ],
+    "internships": [
+      {
+        "duration": "June 2018 - August 2018",
+        "organization": "J&K e-Governance Agency (JaKeGA)",
+        "project": "Digitization of Land Records System",
+        "role": "Software Development Intern"
+      }
+    ],
+    "languages": [
+      {
+        "language": "English",
+        "proficiency": "Professional Working"
+      },
+      {
+        "language": "Urdu",
+        "proficiency": "Native"
+      },
+      {
+        "language": "Kashmiri",
+        "proficiency": "Native"
+      },
+      {
+        "language": "Hindi",
+        "proficiency": "Professional Working"
+      }
+    ],
+    "major": {
+      "name": "Computer Science",
+      "specialization": "Software Engineering and Distributed Systems"
+    },
+    "name": {
+      "firstName": "Amir",
+      "fullName": "Amir Hameed Mir",
+      "lastName": "Mir",
+      "middleName": "Hameed"
+    },
+    "percentage": 87.4,
+    "projects": [
+      {
+        "description": "Self-sovereign identity solution for educational institutions",
+        "duration": "January 2019 - May 2019",
+        "name": "Decentralized Identity Platform",
+        "technologies": [
+          "Blockchain",
+          "React",
+          "Node.js",
+          "IPFS"
+        ]
+      }
+    ],
+    "skills": [
+      "Programming Languages: C, C++, Java, Python, JavaScript",
+      "Web Technologies: HTML5, CSS3, React, Node.js",
+      "Database: MySQL, PostgreSQL, MongoDB",
+      "Blockchain: Ethereum, Solidity, Web3.js",
+      "Tools: Git, Docker, Jenkins, AWS"
+    ],
+    "thesis": {
+      "abstract": "Designed and implemented a self-sovereign identity framework using distributed ledger technology for secure, verifiable educational credential management.",
+      "grade": "A+",
+      "recognition": "Published in University Research Journal, Volume 12",
+      "supervisor": "Prof. Riyaz Ahmad Shah",
+      "title": "Blockchain-Based Decentralized Identity Management System for Educational Credentials"
+    },
+    "type": "Person"
+  },
+  "evidence": [
+    {
+      "description": "Complete academic record for all semesters",
+      "id": "https://kashmiruniversity.net/transcripts/15-CS-0892",
+      "name": "Official Academic Transcript",
+      "type": [
+        "DocumentVerification",
+        "Transcript"
+      ]
+    }
+  ],
+  "expirationDate": null,
+  "id": "urn:uuid:degree-bs-cs-2019-1780327720",
+  "issuanceDate": "2019-07-15T00:00:00Z",
+  "issuer": {
+    "accreditation": "NAAC Grade A+",
+    "description": "University of Kashmir, Hazratbal, Srinagar, Jammu and Kashmir, India - Established 1948",
+    "id": "did:key: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",
+    "name": "University of Kashmir",
+    "url": "https://www.kashmiruniversity.net"
+  },
   "proof": {
-    "created": "2026-06-01T16:54:01Z",
+    "@context": [
+      "https://www.w3.org/ns/credentials/v2",
+      "https://www.w3.org/ns/credentials/undefined-terms/v2"
+    ],
+    "created": "2026-06-01T15:28:40Z",
     "cryptosuite": "mldsa65-jcs-2024",
     "proofPurpose": "assertionMethod",
-    "proofValue": "uu-x-bgq1woftexHJm3Yi6miMWx8rrMDTEivjNKbACfKDughpq6CiizruBvexnK-Ob1JaFx8JekDr-sKeT8iYqMNHxyXC_UqrlO1VURTrDn98vWDTpC7iGhEaqKEpCDGde93eYm3TZLO-5ftWwZUHDL6i9urUujbbfxF1JJbQ0MO7BbnaqZFnlRBN1hRoWMJ0Vo6AcQQ7SIzv_ocqFkFuo9LMpxLYQezai4JEI38otnPv2LIiUPNQNqQ7Iq8hegDQQjqueWyEqVsjKSdSqAdulreI7zEHxog8oimfkwc7-9Zn3slpIYAcbr3XgO62kq_kCTcp95gOa2XWPO5rbgbE8zFTBe1AeP7SiZ175dubbszpbgHdhBmc8DyDf1bZRLJgJDvTuENiV5Xubd1kDvWnrII564Y0QonJWlwLNqAILN9k2Vs-vIX4fdwOMteYTVw5FrslPUmoUJg4kNQg2Fpp-AxUk-3jy4YgFbdPaoA03zlUnUkJcB4WKNLXgD6aPnZu1rBqm82B21ZhyirhLlecOs7N6krnHdaQw0gwBTjnDHL6t-ISaCG8y-zPRo7_dzibp8RMVXkdpzokPEiSy16j5VHINKnpVpVyg64f3rOdq5enUfxcBye5QISKUvlaFx-6z7UlszJ_s1bKuhLmytyGa6TXBJe1IsEvJt7P0R_rW1jN__xt0WhA9iLIrJ-atEcIXzKihVUDzJtz138Wy2e2tKjlcvxoLXWL1Jp6EByQP_5THN6Gxk3XjQyZ-nWGoCRPh5GvsNjjlP6ZGvz6XfUhnefvNJhyz4ufUEVS1xPad1MTBCHD2khtB9qNp6o9kY2ODZh8DClDy9oJx3nU0fXadFHwIT7TVLI-s3AhnWdejfHqJ7Qfc04k2OWXIPsWyicBQYAY7oxOF0uUKSLUaakkOvgi3m64ZqNhmD1trPkFlKHDAkHkBaDlgP2kAdRq0m1xkZtFSqAOA-LNykVQ1OXjC4Y6FDsDSG6LaTJS9gsA07-3NPEHa_pH85OQaYatDrI6RiI0aG5W1HdKm9rJEgixPgRqEuNcEj190ks7XAF0PI-9vmFaOAGbDjUAW9h-N56KPTO4sKOwVH2ZYKDUKiJTaCDwEJBMbTiR3pP3IyKAKHi1zDV0sNN1ezY6_NjyRlOaUUw4z5XHT8nQJ06NdYaqhQR-Fwh5hgKlvuVzAXuJz0j0eJRz6jSS8jE6TpofcbF_svp-wWAyAcdOnSbrbGKzQx9CZk-O4SRSlpmE9tFiDNT78mexPmGjv5fl6kp_TnY1uIhy-KT0b2EvK1bv8JH_57O-MkEqWGwbRvfdarfJtuDhxPn8L-7Ijx6ZTFi9MzvhxTuxmINqKKJWd44Sy65Z7a12JbgJoHq39qRN3E2M6sqJKFN4lE-EE09W1ZgOdxwcj-ry5A5ud2-uY7FLY3Q1kt2Hnuq-wcd8APzh8lvbk5u293DuMVRFWxJlYZTzjMwBveABlpTOWJB4L_IITcOM17sqLoYLHvJSUDi0wzRahXqiHudouwJFOIt_zTa_mVg4XQfMEfKilqYk8p-a257ty2QNcbp5LSlLyuDfa3AUUCuOP9EWhrThk1rlzwaa-suyJ3YQCUSQSxGYWBHSULxlajh43zh9rGB4iBVFjN5Vq-LjjA2I7AOMS3x7GNknRIER4nOC6f0LSWx4k-MAxnZQP0kaTXQdlzJzD9R0nObKxM-ScJ6F9ldG0EWnuqz2h4Rg_f5kb7JiMLUcdMTZgqM-PP1yKP6FejAP4ecO9_fRF3zR7IWTYd2KDuJ9zzuXJaeg-VASTAlOIy7z4dutlhodGTAAyZ0o_YB-jlJaVJxrXZn0W0h9Gz0cVnEnABl0L_Y7M-7aFBwGkDervIdfnvHsRouf6uJqOPyhn64o8pItPuvacmcjDZbWavnl48lgEjE2Yskz3kQUinH3VuIxUY8mfXtIqiAi4o3B8vub1VBgPAuj4aor_-p16uAkwmOw15Sv1iJ8okGYhpM_Ti4nj__2-AmUt1RoAMMzZ2ht2ICTE-luxicSglCujT-zadIdxEDVarJM3JMVFs_qjttgrmTXIrWhH2UAxrxLUhcYRBPCb7Qg3eZCgoJQ4M8FeQC8VAZMCs6JlD0wIKoKV5qZdQkg1JILhg9GWqVta4z3OIgKhiwQOQanhM9aADbcjFCGjZbyi2c8XUCBmi4I4P_u7VVCG6kUX6VtYCx_WyH8r7Zqy9MYiC7qu1qD4gVs3UgqFXH36_O7e7DxouQrNwQ6PGH8_bf9-oAkL8X5BQK_w2cUNLyOVJApv3tWjmkouBxYCJxZC2jhzBKC9aX7-iA4-7HOe8Mvo6MTqFEdoX6u6c_ehde1V94qTnYHiEcGjoFMxldbjHMtziiGDwPWglyHlk52w1MqsRaYX1MNRPUHtGBkJbUH5-uqV01PgZ6zD_jzUi85KM0JnP_aF1GA4EIJkdXpnGCLiEsu_erR-nPCWENBlQjnHJnoLEL9RjkYAbcKfSY82Kgqwfb3cxYAyrnmtmh68XIDZBGT7qO1zwOAcZKdBMUIxmJj1ILXS3yv3T6QC4wrqtJPqHyBrKCKis5v-MmxsifQkPRzcIOru2uA7Idd7laIrESaEY9Mf0jko-0C4aKTDcGv1kLoBPDaWIwHp7HtS6dZEp6FblWtqCuEfbBQ0rihFKZV7MwWG1A3V9Mu2FPY9zcEq-vS8tOCU_l-sasHPmtoGmZiD51IWnuvHXKECo79oCCf3Ns9pzrLWjtSDZfLTB_M-96ALQfhNbSgY64P_Z2t36IbqXidqIVe9M8zqb9GV-JnrPgVFtjC-4td_iwp7vvltUMq-xQ3Mc9uRNkxIFBjxwdAtejEfj-ptezYzSX3RINgoP_XqZM2lEDBmYrIOA708PixjHUUQrUhdd5pQ6iUBNXvDylhl-Ymg2qwU_ADOpHBPQIg58ytZGtHzkbv0Dx17WFXzPVd-VhKijQ0i6iAamv1FxVw1c9dTjwO86zAe_YtgWVlO_X_LIqKIGmZ3H2yKcAWAGm-0jaXI7HEv3Am2wl7Vd7zZdv7Ri5KO1z4WMKHeJmkhWiD1Yv8yf7dJE9T_BOabSmAIksfcxSG01rnrIlqZqwlzWsnfceTRO_MmrUOExyaiV758BUKPggIdHjeGbqAhp-97IJuUpRNRcL6jHWBHl82Me6evaLuRwykLbsb6a-oRyZWILZVDLsrmTU8VZLJzXUtQ6MxCDzvE196cpcjiKXbE239X9iK3GkpTYFCeT21me9iWJLqwsH92bVv6K4_4LFYtlpwr3PqHJPmIuqZKXzvKHo17_rhKXMbDeHhxPwF_PAakshCpQMG9mpXpykrg9M06l2h93obno3joNUhaBmgLnI7FhODskryxqryliIdEqxg8GmoW4RbUC_iRXQll8jUJYe-L9t2xvY9YFbl9F6dDqwCP-sUZOkXVFCo881jDf0K7mU7qqo8w-lwlrzx5nISCAwxoQKARTDzcpCVDQ35gvyvq2ul5-wtHyzb5gPgUYDNLq22fgN8JSGXQECtgK0KT4KOxDHUb2-gAdQvSkJPyj7zauf5hskgYYo2N9o1x7WeXgTtMvJpvef1dh_gfb06-LyWHmN3RpWfpzEqHZnFQ9sn_olP2q-YaPA0YjMpaEELPxYAUy87LiPPpuF8jXer5uvFHE6sVScv1CikoM8fPI1sQicaOFfolFrnvZdtfinvZVffAsaeC30_NiVe82UJLltysgQBSNoCrfLA9hlzc3fXcfla7tu9_DjeFSXYjviGQRI-UWNgScQx8z4p9YcffncYUleqW972BUBI4bhWjqMokRNouQoLe2lnCc46rlhr36BMie8FPzvuPOaWmKYMbtyAgYRQESiXvcxAIJ0hAw1L11MZy5BS744vgB-bafrSOgcHUEQalamD7lBXF_YVuHp0gXkdYpE9A9VN-qaUZfisOtMcJT9xNdN1sDyGCr2ZOQ2nj1GWJCMXAkX07G5AE6RdgItY88VMPs7RsqSgWMJBHZpmv9V64xpSfhr-NBcgutS2oUaj20nuVZaujsfjzQEw0r-8etwiqZ37vZHbLEkLAQh_Ppqyy6nhUWD4iRR7akEat7WbI8cnKinxWLkZNDg-ASmHjXOc9W8OVzv4BgW3a10L4MfbaavESl7XuOYK3vMZLrQ59_DoW7fagr6p3zRgWjHlpNPtbRAQqSGz-Fk6pcWZsq4hW-5bqkpMiThOVJxMNjvVRmWRJR2KSgMCj3pS-Z8gLRntbCyTMILSX5YX7fYUyUbhi8Xuaw8th3gk57gv3dEFXoYI0P2uA_nWSoniQphEYdPctcGRMQgjJGFA4DRHJWQBISltgovf6O4joLCywtvkDxQfX3KAvcPvOKa72wcnKjY7QU5_3Pv-TXmDibbWAAAAAAAAAAAACRAZHSgu",
+    "proofValue": "upAlSzFGVEJcswc3oxx1I5vMOXBXFRconxgglMJH-pN1BPC-8RUIIu_7I6nJVhDoDpHEXei5QEQmJnb-wVc5UpmeMOiePbeyuR60ds-wQxMvKgKpW36mZK-sgAeIR9DWAsdqBDcTTPyp3PVsW2B9Zp-D5dX2bK94wKS5vaeWgMtla_00gsl0pq1D9capG6AYIf7ai5Rt-SKci243LlhHIfCuuzHSkaNfz8ewx9e-lJZr-2M4qAx2jWqBMOH6CLsyrtrgwX-1bCYiZGhbpcQhaKIENMEwqjzxt5xPb0oPMPzavgYfM2eBD6dzBBj3L7n9cdVDlYEghLuP8ZFZ7Fy9PNY80PljbYHd_8Mc_DbK3w716y2GSeNBKzI17R4O2csl7Ti7ZiA2cRElnWiAdwAtFcz2AD_rEq07sDMbeSCefSlpiPn8HnSKkOF7bNlPGnavC8YCy27eLBNI2vZzt5vArroySthuCaWVefMycMvGlaDd6t45pSrmwqgUuJqKkBh6iIYSy-TMS15E3U9adihANCIJ6kSn3bXTm6tcBBMSAzDIFXFoylJBZvB6WsvcEGZPZPf8EuBgrdQ4d939JmJoGh5vmN0K5l1-Nl_zTfG7pxCfARL1_PsAn5TARyPtlnftDowAsB1dCOHeJ0OLEqCE1sX3WLKTpEYLGAuBYD1MB7YZ_OQRZn0EwiPNhU7X7sNg9-dj9iDFw2qQmRYO9ygtXtrtTlaIfUTTjqdumf93XoncCljqhsNuLZhAtdyQ_4En2x2S-G0aEzuvqDIB7KDCp7lxXlyXQcC7tSsZmtnVAKf-gCvZ3kElQG_TNOHCtfkrtv9AfucPnRA2mhMdLnocCMJlR8oax1hNLQ2w-U4owPw_SQCyEjoe3ZtvCByWTYM9fge81uSDS7pel0s9sJpUgYJeYtLg_BdKWcIgFHwmv0XSWsp5-NakJ8qlsMnoN9VMa8T1nFHCXSMa9ARczyi6szuV6fo11o1ALgQtVW7krO4IOx1FZYyhtRFvOsk25e8eVun3YFhxiiBhNVrxktyPweszwz5mtKJxCO22KbH1JD-jkvO6rzPHoi6Ivo9NaWOgyaujC7kWsUMZ0T6yVIQIjG5S14STF43PISSuYzwI5EFmqP-9uCvIIYR2KTgIDqR_RooatMxyTNHUlWqVZJJAhwwGv2x4TmfwdREmBD0X67SBfRRlHDqXPosRo10Zb7y_aRfWC9T6NmOFOXvpMn8xHFqsQfVib1oIakfwUQtWryKo7FYI2orS-2VaMaX8PGAfFUyihyuKmTGmADxgOCProeWd4Do9yidlK4tXJpSh-dZHpnz0P5GFFieBg-57mH4ZDa6Vfc2j1qgHtEUMx5kcO_zzbrKLCaJMaSpGHjAxtF7xvRhJUWAQu421RNEoMtCQE4uiBljsiCdgxW3zWvOY05ZLPCfc9AmohQtGtbPeEWU4q3UoyreBI8tXpBzJnhORB7GNHAOfiFgRbBiG1JMe1LCMC3JTiNOlkuZefnrFJruuZHD65emE9uwaB0wayfw91Q21vTmW2VpW2_xLSHMsU0apOrL4QTCLNCE9pbMhdFNt_zxDgQejj7Y4Ai-FhTMCb3djnLMu9ti-YAYkd-sM_NUcbQpMYqynlNTw6AeUZbzTzG3Hxz2OKjFc-D7dVia2Qqn-YcYJQwNuqRYg6jjNUgYi54d86ZMfAn9h5gadqmJYvOeq89ae6REf9acey_OEmp8KsbkM87xSjuUTKYnXCTAoIhdL-dYhetxoftErBKfoiirJ_tFMpo7BtkWLXg2txofU2r2RvI_9i5Gg8m1Qp0b8UUhO0mopqqr8CeL0meDOvDQwY4TguKRtgIG_oYrVWgvbSQhtOorMXtECCdWeLOwrq6sMHmULTqV424D0q7ah6yegcuEv3rJLJDkbLJHakqUJxL7nwQV-8SrXGGzgvgYddAQtIG6OnnEQ1EqPsg3efFnaV2e54IMBEdVW7zMlUF_SksW8i_1OuJoswYvzgQKR5zJnis6R-GfOt_7v0XsstpNOYKn-Q7WkaRo1yqdz04uL_R0qfyR2ukL1N1xpmSWxeRTY4SorrX0zJYZPBAVW8ZYQ5JbzZpglt63UYJbVnjen2XAaYPzgBCOCQIYoVoEwaoFPVqR-X80n3YdCvd3CjlZt0Cgw0m5kzvk8nmXLKWwSCQBNWfTTljLM0YDZ_uolLg13pti8xTH6A__tvU-MZlC9ukOmlaHkMBUO3zg3Sr8Ej0RMOEeFDZNOwkCIHi6p33x5AtT6SAkM6wsTaeNuum9KfGNSVdwUctJbyqQQbRf1CCeaFt5rdSZAbEgEMB6TQraqe8gwE8hbj0pRHS1P4PTZHJeKFPu2uWMNcUPrKE306hWk4OcBid35CbJCM71IEoWa18kIWCniLZ4bRVMR7HOz-hHWW4racLcOp3-3P_dOHxAnu85XzjzXxDVc63G8ErhW1PFJC_7CEega1iYQFWuluSPe7zYXeDH-sH9V1kFmMZzMn7YlbjpYNClqw0ixKYfjvcJNLa8kz9X0myd70jUuipdnif0Eyw3tgUqg6hy0-shnVj7JzyLiKPPWVn6PCsJ-awaT6Ekp8cICPzIlwKMoLhLHKCcJMSlIfOTLZLYPjezVZz9_KYi2ehOpuwdIu6k0I_F4fv1O4uffuq8CClXmB2vzCpW95ADxQWOfvXdVOvhp6vrK1PjG0ikMxH9NcNa4jMCVpMtnG6MixFgouPDrDxZUYvW1S3OaInqU4sMYNqbk7jn5YqTwhEdhzSaCtRzbbuW8ozcR6IlVv8RoB2oQpTq6aHQC23GPfgJS4Hso7MpQ4dA23N-tEKSExHy5gjr-ILPpX8C81R-Na2xb0_bAriz8mU9rt3ff0Rv_bqOz0oHTAIEJzUUeB2k_W4Bf4yc3GjfkomPmXUicgv62_6Ua-8-AyDhLA0njdCznDwR32dlPdk07VJtyGw1nV8h2zdsCUaKWxJYMIsyCjsrOIAzTa0kKqtfEZOFlox0thrGQq6bROaTPtVPNEIrj3DJbZ7-FkJ9IRhvwAZYpju2HPhqxjygF2r7PT4s_5psYSu2QI0IAMfJH12-QEh_FBRriBmi4uVE4d6A5Y9O_h81xFqpD4ZXF_zkPsoXyUqMOreUO-dr73sQh_kwhBcDIflnonI3jrdEY7okx39_QP9nLxxVu2IBbz4XwXhoXLR7UOfbvXDlnyk2RigR5BMxgBM_DvsCJIu9u59B-bPzwdNvvnvYjAkAS3n9WcHAy1MkUbwaan4GXCrdImn45HCOG0r1KO0j0OxGkccFBeab2qYEOq_Q4vk0kw7XJKNE-CrwDuLQ4u7HLXPDyUoamDZPwSP4FaoGpYzQfDqY-To-FmGWbzeNQFDXg5SpzDr7kn9LaJE3FeRy3ct6oktmHfPZ-_3qO8QwTcNIep9WDQzPptaGI6tOasocPPZiU_GbmShuIDeJFIJy9uYsBXLkk23MlnSCI-DuHEfKLCvOoZTbGOn3p3COX6w14JvYX6leArsG8GNfhnECjcqwTyygYu1-sQqXuhgbmM7uAdzRP32Akr9i6uRmF7uFte9BZ5N_xfcXhgYpYUIqSlPUQTKftI36UTwwG9YJOReooSVg5iDfNoXlEnFMS-Z95pGAdmDvQ9dHNyD3-NAth5HsvXjIydBubY0fCVEvSb5a6mzAOcX2KMWAux2W9KZSE_BlT-oFSyp2MeG4UG6fTLmi_J3kLSh7B28Hbgf8KliCaJ6AHMYpvWkkLGJaeKSp1TGSE7XpgjWGdndgeyLiDd0moQbYEVnf6PDgDGZn7teW461W2wSqBLvvfESq1TCorb2OdrDjlF8FVB1ntApOHVJWRvgXBSs636ADZLnmbGkUeDMLL6_ZzVyCh9K4_UEg74Hk4ErOIRPZgqgg5fzhW7uUlTckSNSfVueCaHqM4rU2nRtfKTdoE1dij2p82m1SlvLJSOpGfxF_hKF0qkb_qUEeu3we4MYypBfv2kMJGc4SLJBcxuzYGJNDk86rZAvrYCrVAErsTIjfcK27-ro0l8svV2VYpbtyckaghxs8F7y9PVJ5OPSSmK-eoEr-b6-BpqKR023kwjJPfr3TycC68gBNuagnN8z7hKcZd9IBkMCXCQqRb_gQDR0M1Zq2Dyq1qPFl_xnDvOIa4OVRwDrUu7DJlNpqIeUPg_pibxtaoij7fd8Ry6w4tQe-o_teBSw1Tbvvrw6sGqkeymull9sejURDTsH9h-VVNHsaZcAnjbZirSonfEjfLPs1UjRNfkv4JzYP_Jzc5BYaJGbBqkjnpoF1L7WmfDQ-EqgN7geX-0MYfJMHZC0wqvAQwLVmPQQJKZqrW92-QiLFVicrHiDSBgbZwDNjx7foGio90MDhocLTBJXai2wQAAAAAAAAAAAAAABAwTGCEs",
     "type": "DataIntegrityProof",
-    "verificationMethod": "did:key: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#did:key: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"
+    "verificationMethod": "did:key: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#did:key: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"
+  },
+  "termsOfUse": {
+    "id": "https://kashmiruniversity.net/policies/credential-terms",
+    "profile": "https://www.w3.org/TR/vc-data-integrity/",
+    "prohibition": [
+      "CommercialUse",
+      "Misrepresentation"
+    ],
+    "type": "IssuerPolicy"
   },
   "type": [
     "VerifiableCredential",
-    "TestCredential"
-  ]
+    "DegreeCredential",
+    "UniversityDegreeCredential"
+  ],
+  "validFrom": "2019-07-15T00:00:00Z"
 }
