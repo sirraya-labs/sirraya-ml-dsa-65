@@ -192,7 +192,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("--------------------------------------------------------------------------------");
     println!("CANONICALIZATION (JCS):");
-    println!("  [NOTE] Cryptosuite 'mldsa65-jcs-2024' expects RDFC, using JCS as fallback");
 
     let mut unsigned_vc = vc.clone();
     if let Some(obj) = unsigned_vc.as_object_mut() {
