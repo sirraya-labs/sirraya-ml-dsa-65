@@ -1,4 +1,4 @@
-```markdown
+
 # ML-DSA-65 -- Post-Quantum Digital Signatures (FIPS 204)
 
 [![Build](https://github.com/sirraya-labs/sirraya-ml-dsa-65/actions/workflows/build.yml/badge.svg)](https://github.com/sirraya-labs/sirraya-ml-dsa-65/actions)
