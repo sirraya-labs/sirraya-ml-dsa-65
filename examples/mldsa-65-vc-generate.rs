@@ -50,7 +50,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n{}", separator);
     println!("CREDENTIAL ISSUANCE COMPLETE");
     println!("{}", separator);
-    println!("Credential ID:   {}", signed_credential["id"].as_str().unwrap());
+    println!(
+        "Credential ID:   {}",
+        signed_credential["id"].as_str().unwrap()
+    );
     println!("Holder:          Amir Hameed Mir");
     println!("Degree:          Bachelor of Science in Computer Science");
     println!("Issuer:          University of Kashmir");
@@ -245,22 +248,36 @@ fn display_credential_summary(credential: &Value) {
     let subject = &credential["credentialSubject"];
     println!("\n  Credential Summary:");
     println!("  +-------------------------------------------------------------");
-    println!("  | Student:     {} ({})",
+    println!(
+        "  | Student:     {} ({})",
         subject["name"]["fullName"].as_str().unwrap_or(""),
-        subject["identifier"][0]["value"].as_str().unwrap_or(""));
-    println!("  | Degree:      {} in {}",
+        subject["identifier"][0]["value"].as_str().unwrap_or("")
+    );
+    println!(
+        "  | Degree:      {} in {}",
         subject["degreeType"]["name"].as_str().unwrap_or(""),
-        subject["major"]["name"].as_str().unwrap_or(""));
+        subject["major"]["name"].as_str().unwrap_or("")
+    );
     println!("  | Institution: University of Kashmir");
-    println!("  | Department:  {}", subject["alumniOf"]["department"].as_str().unwrap_or(""));
-    println!("  | Graduation:  {} (Class of {})",
+    println!(
+        "  | Department:  {}",
+        subject["alumniOf"]["department"].as_str().unwrap_or("")
+    );
+    println!(
+        "  | Graduation:  {} (Class of {})",
         subject["awardDate"].as_str().unwrap_or(""),
-        subject["graduationYear"].as_u64().unwrap_or(0));
-    println!("  | CGPA:        {}/{} - {}",
+        subject["graduationYear"].as_u64().unwrap_or(0)
+    );
+    println!(
+        "  | CGPA:        {}/{} - {}",
         subject["gpa"]["value"].as_f64().unwrap_or(0.0),
         subject["gpa"]["scale"].as_f64().unwrap_or(0.0),
-        subject["academicStanding"].as_str().unwrap_or(""));
-    println!("  | Honors:      {} award(s)", subject["honors"].as_array().unwrap_or(&vec![]).len());
+        subject["academicStanding"].as_str().unwrap_or("")
+    );
+    println!(
+        "  | Honors:      {} award(s)",
+        subject["honors"].as_array().unwrap_or(&vec![]).len()
+    );
     println!("  +-------------------------------------------------------------");
 }
 
@@ -355,7 +372,10 @@ fn save_issuer_keys(
         "assertionMethod": [format!("{}#{}", issuer_did, issuer_did)]
     });
 
-    fs::write("issuer_keys/did.json", serde_json::to_string_pretty(&did_document)?)?;
+    fs::write(
+        "issuer_keys/did.json",
+        serde_json::to_string_pretty(&did_document)?,
+    )?;
 
     let issuer_info = json!({
         "did": issuer_did,
@@ -366,7 +386,10 @@ fn save_issuer_keys(
         "security_note": "Secret key must be stored in HSM in production"
     });
 
-    fs::write("issuer_keys/issuer_info.json", serde_json::to_string_pretty(&issuer_info)?)?;
+    fs::write(
+        "issuer_keys/issuer_info.json",
+        serde_json::to_string_pretty(&issuer_info)?,
+    )?;
 
     Ok(())
 }
