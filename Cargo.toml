@@ -64,10 +64,7 @@ name = "mldsa-65-vc-generate"
 path = "examples/mldsa-65-vc-generate.rs"
 required-features = ["w3c"]
 
-[[example]]
-name = "did_document_demo"
-path = "examples/did_document_demo.rs"
-required-features = ["w3c"]
+
 
 # ============ BINARIES ============
 [[bin]]
