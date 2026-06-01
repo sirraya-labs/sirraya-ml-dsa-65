@@ -155,7 +155,7 @@ cargo test --all-features
 
 MIT License. See [LICENSE](LICENSE).
 
----
+
 
 ## References
 
