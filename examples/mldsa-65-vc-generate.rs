@@ -4,12 +4,12 @@
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{DateTime, Utc};
-use ml_dsa_65::{MlDsa65, PUBLICKEYBYTES, SECRETKEYBYTES};
 use serde_json::{json, Value};
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
     Shake256,
 };
+use sirraya_ml_dsa_65::{MlDsa65, PUBLICKEYBYTES, SECRETKEYBYTES};
 use std::fs;
 use std::time::SystemTime;
 

@@ -7,13 +7,13 @@
 use base64::{
     engine::general_purpose::URL_SAFE, engine::general_purpose::URL_SAFE_NO_PAD, Engine as _,
 };
-use ml_dsa_65::constants::{PUBLICKEYBYTES, SIGNBYTES};
-use ml_dsa_65::MlDsa65;
 use serde_json::Value;
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
     Shake256,
 };
+use sirraya_ml_dsa_65::constants::{PUBLICKEYBYTES, SIGNBYTES};
+use sirraya_ml_dsa_65::MlDsa65;
 use std::env;
 use std::fs;
 
