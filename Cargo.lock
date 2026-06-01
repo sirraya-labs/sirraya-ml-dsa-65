@@ -1676,6 +1676,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "sha2",
  "sha3",
  "static-iref",
  "tempfile",
