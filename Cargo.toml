@@ -1,6 +1,6 @@
 [package]
 name = "sirraya-ml-dsa-65"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "ML-DSA-65 Post-Quantum Digital Signatures (FIPS 204) with W3C Verifiable Credentials"
 license = "MIT"
