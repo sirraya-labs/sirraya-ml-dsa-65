@@ -25,7 +25,7 @@ support.
 
 ## Installation
 
-```toml
+
 [dependencies]
 sirraya-ml-dsa-65 = { version = "0.1", features = ["w3c"] }
 Quick Start
