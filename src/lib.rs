@@ -19,14 +19,6 @@ pub use ml_dsa_65::MlDsa65;
 pub use constants::{PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 
 
-
-// VC Verifier module - JCS-based verification
-#[cfg(feature = "w3c")]
-pub mod vc_verifier;
-
-#[cfg(feature = "w3c")]
-pub use vc_verifier::verify_vc;
-
 // For backward compatibility with existing code that expects Dilithium5
 pub use dilithium_masked::Dilithium5 as Dilithium5Masked;
 
