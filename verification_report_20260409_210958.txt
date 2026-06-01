@@ -1,0 +1,108 @@
+================================================================================
+SIRRAYA LABS - CRYPTOGRAPHIC VERIFICATION REPORT
+ML-DSA-65 W3C Verifiable Credential Validator
+================================================================================
+
+Report Generated: 2026-04-09 21:09:58
+Verification Status: SUCCESSFUL
+Cryptographic Suite: mldsa65-jcs-2024
+Total Processing Time: 283 ms
+================================================================================
+
+CREDENTIAL METADATA
+===================
+
+ID: urn:uuid:test-vc-mldsa65
+Issuer: did:key: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
+Issuance Date: 2026-04-04T00:00:00Z
+Types: VerifiableCredential → TestCredential
+Context: W3C Credentials v2
+
+
+PROOF CONFIGURATION
+===================
+
+Cryptosuite: mldsa65-jcs-2024
+Proof Type: DataIntegrityProof
+Created: 2026-04-04T00:00:00Z
+Purpose: assertionMethod
+Verification Method: did:key:zZKHLrRmHsiuABf9vVLtciSx6RFf9f9HqHjnbSxKfjcGzEdWcbha993sQDYsphks77zSURiDfXwU634eDb4ykBP64CQCuFdDJoiVcGxrzsM4FctFkeH7nrY7TBh1MxEhAUJMgxt34nHpkFxEugUfyt6C6xWhuvJL932SMytd81bQUi1ykpfgFC7iGtZkxqxQmgxWbrvHYa2WcYzbAbbf8gyL9A3zjpnFDAEjcRReHNkH7hG4XkfLTFvPakJH6A2FPo6P1ahpvGDMfnfsGxzuFkfVNyFePf6jUv4A16nv8sxBaRJQ6evpXG3PgbSDhwDkXKzhCCE89rfM63jbR1PuCGoU7k8gmgGTTdFDLiT5VkQ8frggNQ83EbmDtPnhRqyuhNmsK6KAo2ihcCHp9YLunPrwFtr2Kc5MkVNjZepxacrMs82MybyYFxojSwkVDKdy5rk2jGYLQm8wRoKztG4XYCutePFAEEWZX7SafV9TgNC7Fk9WXuhVfRDk6rKNFJQ4XcmnqMgHJLfBi22xmWgZSC3d58DCUTN2CtqAC1qFgqJ97qfBdo8EfqP4ZJQYV8RKJX8eV8xrawt2xWpLEcUncrw9sWwARmmsspBQeb2J8HXB6E2BcbPWdBived18XiASJhypsLyZMCyKox3UhFTAWNGrkzacmnhT3evpm7MsTzvXv4sHsLCqT3EJ9dYBXwXKoM46YVctRyuzTttvZQPjEdXzxgn5dxzG1ahAP3xS6QGPtpER84saduehpG4Rii1aiZrKLMbeM3m1RqbayPBn9bGEPhDg223FCy1WLzE6RZtTQx2bhCanYYqsGUjHEajAryAJi149PBmjYKDqxJYp8Ph8Z4B26NKsEjHKRU2E3iJ4tLoLobtZCfyP13gDJT86XejtHuTfnMENdc2b3n8CngTwgyzudYGFUCkV4VgRUcHrx814o9TJuD1MPnTHnvWySYeZmA83vsHzgyNEc3LQWfN8fdF5fG3A5BXrRmN64GDD8AtAHErdWdR9zbuwMydq1ni62vKgVxrSVNYMZEvtSjyi4KhCPEdNvtBKBqVTvW4o5zq7a2Ar4jFkhSmxQ4jBNjenB7hkxr4CKEaqQ62ScGkWDuUf4oNBR4U96qLox32uLybz27ADAGbEixR13Nfa1EZiViJdSfc95sDtnezbrVj2YXLSCSQWNMutm6i6vU23drwsxnajLzeEqnMejHLsKfgHLUVwb7zkEiX5HHTX3rd9eT92z8dFUDpwEt15HFZZtqkcKsX7Qpe8CB6EJ3gprdCYC1W2aKRyaPv1L69jYRviZ9aEphSTLvR4yyvpKb1kUJZ7LPsQNbcZZSukqBQZfeTvRZP5NSkvceoBg3jyRqnA7Pha6uTU9LeJay9iHyLjbxfrGh6iAaxHTo9x98fv1E4VzqrkcqYhE7p1pfabsSbVQfbjvAk3LPTDkSrk7CZLB5WerMAVHWxJqEbPa9FY3tmxYyqB4Jww5E5ZohvHMfvB6S1Er1LZVqkRJMseF4ignLBgxhB445LV8UMvAF3b6y7egi7YUKN6Xm4TRxEqUv1CaaCUweFqvqdfZnhucMd6HX8cgaa8Xv7C6iqXtHKMfgjuWHH7ZfJyC1HJP6bMj2fiquYKPaZB7sLS8u8ujYgwks6wRGknNcY27Ljps21LzQ4dwhN9jecQYenDYtdFz8oDmCPkTLMoSQxjuic8co7gRW4sHLmvjpAwn7db8shjHrfWbaT9LeaieheQF6hHaqWAcJHdUXCfM3ip8U2kXdvmRe5iDotywHzqMydiyDq35qREesyuF75s7oR5xbXNpvnGSo3WnpqsFWrVuhgVWNaNGh32XdAxsHuy98Bz2oLUNiimbSgQnFUxLoMm69cANFkaJGNzDz6Pqn2cxyHVFEDD2iNBoSVmwuk2v26QCubom8FYBxuEWuDhEna71T5UQGQnaXZAXYmQYG2gPx5emrS4XpZbwJLiU6nDdDG9mnhrD6eS2mcMehX1Zqph6rcwJkptziQ27RNM7k2uiZRn2SsJPyWpFtc9A6TFh3V7cddtnifdtCouScbgSbyxvAyqBm6gsxDjiQTRjpEJF5P7M1XbAdnBZd7p5Bo3wrZbBgeNjBUQRQY6mRjBv93cm82R7PdGXDzofMjnGEdS8HY5GqPFnZTMPNXw66q6WXANiRZ85CXa9gTngEvVCqcNPn6z7iur8Uif1p3PXVxpdLXPT48d7T7mzTSVnX9SSwHcFFNMgBFCwdCcCoNyv63wsz8vwcTZ4Ymdgs7BrpZzkV4Yypvgghiw9n9c2y2PvrCgrv8qcCLvW16LRdnLDRGHS1TVxdQ1T9vicZQ3p8BwaGNZ75CBMfk1JVX2u5z5PPGihFPr7yDE7AETbEFcnFQCQAHpn5dgeDCx2nD8ZVNR54a72AwWjvZG15vXzr3po5amZZBJjtngy6LVR6CYpFAoypwHDuNG458J6rtNvrUX1qEeTZQcPboZN7VByGbxNg7bTyFFacdnbb2pNuhdd4C3TowsJGFn9RdJorB7JNSgLp8ryV24m9dAbGcz1wo3jEeeaZjpvV7HbYyMoW5L9TrNQWwN49hzzYYz2WPGKziZsu4kFYemEypoDQBWbVrdqv44hQG1AzoeW4UVzg8tFY7v6Vef12Bj6M7Gi2N4kW6xNGLw6NEN1#did:key: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
+Signature Size: 4412 characters (encoded)
+
+SIGNATURE DECODING
+==================
+
+Total Size: 3309 bytes
+Initial Bytes: 82 03 85 1b 42 0c 30 f1
+Expected Size: 3309 bytes (mldsa65-jcs-2024)
+Size Validation: PASSED
+
+PUBLIC KEY RESOLUTION
+=====================
+
+Length: 1952 bytes
+Initial Bytes: 27 31 21 47 e4 9d df dd
+Entropy: 7.90 bits/byte (max 8.0)
+
+SIGNATURE STRUCTURE VALIDATION
+==============================
+
+Algorithm: ML-DSA-65
+L Parameter (rows): 5
+K Parameter (columns): 6
+Challenge (c̃): 32 bytes
+Response (z): 3200 bytes
+Hints (h): 77 bytes
+Total Expected: 3309 bytes
+Actual Size: 3309 bytes
+Structure Validation: PASSED
+
+CRYPTOGRAPHIC PRIMITIVE VALIDATION
+==================================
+
+ML-DSA-65 implementation self-test passed successfully.
+All cryptographic operations functioning correctly.
+
+CANONICALIZATION RESULTS
+========================
+
+Canonicalized Credential: 2969 bytes
+Canonicalized Proof Config: 5507 bytes
+Combined Input Size: 8476 bytes
+SHAKE-256 Output: 64 bytes
+Message Prefix: 3cec22b36c0cfc9d6bbda172a61fc710...
+
+SIGNATURE VERIFICATION
+======================
+
+Signature verification: SUCCESSFUL
+Cryptographic integrity confirmed.
+
+W3C COMPLIANCE ASSESSMENT
+=========================
+
+W3C Credentials v2 Context: PRESENT
+VerifiableCredential Type: PRESENT
+Proof Type: DataIntegrityProof (STANDARD)
+Cryptosuite Format: mldsa65-jcs-2024 (STANDARD)
+
+Overall Compliance: COMPLIANT
+
+================================================================================
+VERIFICATION CONCLUSION
+
+The credential has been cryptographically verified and meets all security
+requirements. The content is authentic and has not been tampered with.
+
+Compliance Status:
+  • W3C Data Integrity Proof v2: Compliant
+  • FIPS 204 (ML-DSA-65): Compliant
+  • RFC 8785 (JCS Canonicalization): Compliant
+
+This verification report constitutes a formal cryptographic attestation of
+the credential's integrity and authenticity.
+
+================================================================================
+SIRRAYA LABS - Cryptographic Systems Division
+Confidential - Proprietary Information
+================================================================================

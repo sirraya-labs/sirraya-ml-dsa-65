@@ -1,0 +1,108 @@
+================================================================================
+SIRRAYA LABS - CRYPTOGRAPHIC VERIFICATION REPORT
+ML-DSA-65 W3C Verifiable Credential Validator
+================================================================================
+
+Report Generated: 2026-04-09 21:03:12
+Verification Status: SUCCESSFUL
+Cryptographic Suite: mldsa65-jcs-2024
+Total Processing Time: 282 ms
+================================================================================
+
+CREDENTIAL METADATA
+===================
+
+ID: urn:uuid:degree-bs-cs-2019-1775748753
+Issuer: [UNSPECIFIED]
+Issuance Date: 2019-07-15T00:00:00Z
+Types: VerifiableCredential → DegreeCredential → UniversityDegreeCredential
+Context: W3C Credentials v2
+
+
+PROOF CONFIGURATION
+===================
+
+Cryptosuite: mldsa65-jcs-2024
+Proof Type: DataIntegrityProof
+Created: 2026-04-09T15:32:33Z
+Purpose: assertionMethod
+Verification Method: did:key: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#did:key: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
+Signature Size: 4413 characters (encoded)
+
+SIGNATURE DECODING
+==================
+
+Total Size: 3309 bytes
+Initial Bytes: 91 bf 2e 05 e8 6c 1f e3
+Expected Size: 3309 bytes (mldsa65-jcs-2024)
+Size Validation: PASSED
+
+PUBLIC KEY RESOLUTION
+=====================
+
+Length: 1952 bytes
+Initial Bytes: de 0b 13 55 6d 01 de 77
+Entropy: 7.92 bits/byte (max 8.0)
+
+SIGNATURE STRUCTURE VALIDATION
+==============================
+
+Algorithm: ML-DSA-65
+L Parameter (rows): 5
+K Parameter (columns): 6
+Challenge (c̃): 32 bytes
+Response (z): 3200 bytes
+Hints (h): 77 bytes
+Total Expected: 3309 bytes
+Actual Size: 3309 bytes
+Structure Validation: PASSED
+
+CRYPTOGRAPHIC PRIMITIVE VALIDATION
+==================================
+
+ML-DSA-65 implementation self-test passed successfully.
+All cryptographic operations functioning correctly.
+
+CANONICALIZATION RESULTS
+========================
+
+Canonicalized Credential: 7550 bytes
+Canonicalized Proof Config: 5614 bytes
+Combined Input Size: 13164 bytes
+SHAKE-256 Output: 64 bytes
+Message Prefix: c47ff1e7bc7e7c7fb0946126fb2c7a0d...
+
+SIGNATURE VERIFICATION
+======================
+
+Signature verification: SUCCESSFUL
+Cryptographic integrity confirmed.
+
+W3C COMPLIANCE ASSESSMENT
+=========================
+
+W3C Credentials v2 Context: PRESENT
+VerifiableCredential Type: PRESENT
+Proof Type: DataIntegrityProof (STANDARD)
+Cryptosuite Format: mldsa65-jcs-2024 (STANDARD)
+
+Overall Compliance: COMPLIANT
+
+================================================================================
+VERIFICATION CONCLUSION
+
+The credential has been cryptographically verified and meets all security
+requirements. The content is authentic and has not been tampered with.
+
+Compliance Status:
+  • W3C Data Integrity Proof v2: Compliant
+  • FIPS 204 (ML-DSA-65): Compliant
+  • RFC 8785 (JCS Canonicalization): Compliant
+
+This verification report constitutes a formal cryptographic attestation of
+the credential's integrity and authenticity.
+
+================================================================================
+SIRRAYA LABS - Cryptographic Systems Division
+Confidential - Proprietary Information
+================================================================================

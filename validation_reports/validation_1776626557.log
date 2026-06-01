@@ -1,0 +1,39 @@
+[   0.004s] [INFO ] Enterprise validation framework initialized
+[   0.008s] [INFO ] Security parameter λ = 192 bits
+[   0.009s] [INFO ] Hint parameter ω = 55 bits
+[   0.011s] [INFO ] Report directory: validation_reports
+[   0.017s] [INFO ] Artifact directory: validation_artifacts
+[   0.018s] [INFO ] ============================================================
+[   0.020s] [INFO ]   FIPS 204 TABLE 1 PARAMETER VERIFICATION
+[   0.022s] [INFO ] ============================================================
+[   0.068s] [PASS ] All FIPS 204 Table 1 parameters verified
+[   0.070s] [INFO ] ============================================================
+[   0.072s] [INFO ]   PERFORMANCE BENCHMARKING
+[   0.073s] [INFO ] ============================================================
+[   0.167s] [INFO ] Running 100 key generation iterations (parallelized)...
+[   4.252s] [PASS ] Keygen: 42.99ms ± 44.83ms (p95: 69.61ms, p99: 275.55ms)
+[   4.253s] [PASS ] Sign:   58.29ms ± 49.14ms (p95: 106.81ms, p99: 339.35ms)
+[   4.255s] [PASS ] Verify: 38.90ms ± 37.34ms (p95: 78.14ms, p99: 257.42ms)
+[   4.264s] [PASS ] Key uniqueness: 100.0%
+[   4.265s] [PASS ] Sig uniqueness: 100.0%
+[   4.266s] [PASS ] Peak memory: 0.00 MB
+[   4.268s] [PASS ] CPU utilization: 0.0%
+[   4.271s] [INFO ] ============================================================
+[   4.273s] [INFO ]   TAMPER DETECTION TESTING
+[   4.281s] [INFO ] ============================================================
+[   4.762s] [PASS ] Tamper detection rate: 100.0% (20/20)
+[   4.764s] [INFO ] ============================================================
+[   4.765s] [INFO ]   ENTROPY ANALYSIS
+[   4.767s] [INFO ] ============================================================
+[   4.848s] [INFO ]   Entropy sampling: 0/100
+[   5.816s] [INFO ]   Entropy sampling: 20/100
+[   6.710s] [INFO ]   Entropy sampling: 40/100
+[   7.459s] [INFO ]   Entropy sampling: 60/100
+[   8.234s] [INFO ]   Entropy sampling: 80/100
+[   9.031s] [PASS ] PK Entropy:  7.9041 bits/byte
+[   9.032s] [PASS ] SK Entropy:  7.8819 bits/byte
+[   9.034s] [PASS ] Sig Entropy: 7.9393 bits/byte
+[   9.113s] [PASS ] Performance metrics saved: validation_reports/performance_metrics.csv
+[   9.115s] [PASS ] Full metrics saved: validation_artifacts/validation_metrics.json
+[   9.120s] [PASS ] Full report saved: validation_artifacts/enterprise_validation_report.json
+[   9.174s] [PASS ] Enterprise validation complete

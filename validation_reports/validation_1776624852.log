@@ -1,0 +1,28 @@
+[   0.004s] [INFO ] Enterprise validation framework initialized
+[   0.006s] [INFO ] Report directory: validation_reports
+[   0.007s] [INFO ] Artifact directory: validation_artifacts
+[   0.008s] [INFO ] ============================================================
+[   0.012s] [INFO ]   PARAMETER VERIFICATION
+[   0.013s] [INFO ] ============================================================
+[   0.015s] [ERROR] GAMMA2=261888, expected 261889
+[   0.017s] [INFO ] ============================================================
+[   0.019s] [INFO ]   PERFORMANCE BENCHMARKING
+[   0.020s] [INFO ] ============================================================
+[   0.023s] [INFO ] Running 100 key generation iterations (parallelized)...
+[   2.332s] [PASS ] Keygen: 26.64ms ± 9.61ms (p95: 33.43ms, p99: 76.47ms)
+[   2.333s] [PASS ] Sign:   38.37ms ± 14.12ms (p95: 71.68ms, p99: 78.60ms)
+[   2.334s] [PASS ] Verify: 24.70ms ± 3.93ms (p95: 32.13ms, p99: 37.09ms)
+[   2.335s] [INFO ] ============================================================
+[   2.336s] [INFO ]   ENTROPY ANALYSIS
+[   2.337s] [INFO ] ============================================================
+[   2.418s] [INFO ]   Entropy sampling: 0/100
+[   3.535s] [INFO ]   Entropy sampling: 20/100
+[   4.398s] [INFO ]   Entropy sampling: 40/100
+[   5.159s] [INFO ]   Entropy sampling: 60/100
+[   5.945s] [INFO ]   Entropy sampling: 80/100
+[   6.722s] [PASS ] PK Entropy:  7.9032 bits/byte
+[   6.723s] [PASS ] SK Entropy:  7.8828 bits/byte
+[   6.724s] [PASS ] Sig Entropy: 7.9411 bits/byte
+[   6.727s] [PASS ] Performance metrics saved: validation_reports/performance_metrics.csv
+[   6.740s] [PASS ] Full metrics saved: validation_artifacts/validation_metrics.json
+[   6.853s] [PASS ] Enterprise validation complete
