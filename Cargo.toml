@@ -2,77 +2,61 @@
 name = "ml-dsa-65"
 version = "0.1.0"
 edition = "2021"
-description = "Complete implementation of Dilithium5 post-quantum digital signatures"
+description = "ML-DSA-65 Post-Quantum Digital Signatures (FIPS 204) with W3C Verifiable Credentials"
 license = "MIT"
 authors = ["Sirraya Labs"]
-repository = "https://github.com/sirraya/dilithium5-rust"
+repository = "https://github.com/sirraya-labs/sirraya-ml-dsa-65"
 
 [dependencies]
 # Core cryptographic
 sha3 = "0.10"
+rand = "0.8"
+rand_chacha = "0.10.0"
 rand_core = { version = "0.6", features = ["std"], optional = true }
 getrandom = { version = "0.2", optional = true }
-rand = "0.8"
-multibase = { version = "0.9", optional = true }
-sha2 = "0.10"
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], optional = true }
 
-# RDFC dependencies (for W3C VC support) - all optional
+# Serialization
+serde = { version = "1.0", features = ["derive"], optional = true }
+serde_json = { version = "1.0", optional = true }
+base64 = { version = "0.22", optional = true }
+hex = { version = "0.4.3", optional = true }
+
+# W3C VC support
+multibase = { version = "0.9", optional = true }
+uuid = { version = "1.5", features = ["serde", "v4"], optional = true }
+chrono = { version = "0.4", features = ["serde"], optional = true }
 json-ld = { version = "0.21", features = ["reqwest", "serde"], optional = true }
 rdf-canon = { version = "0.15.0-alpha.6", optional = true }
 rdf-types = { version = "0.15", optional = true }
 iref = { version = "3.2", optional = true }
 static-iref = { version = "3.0", optional = true }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"], optional = true }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], optional = true }
 
-# Make hex optional
-hex = { version = "0.4.3", optional = true }
-
-# Serialization
-serde = { version = "1.0", features = ["derive"], optional = true }
-serde_json = { version = "1.0", optional = true }
-base64 = { version = "0.22", optional = true }
-bincode = { version = "2.0.0-rc.3", optional = true }
-
-# Enterprise features
-uuid = { version = "1.5", features = ["serde", "v4"], optional = true }
-chrono = { version = "0.4", features = ["serde"], optional = true }
+# Enterprise
 rayon = { version = "1.8", optional = true }
 csv = { version = "1.3", optional = true }
+bincode = { version = "2.0.0-rc.3", optional = true }
 
-# Medical compliance dependencies
+# Medical / HSM
 aes-gcm = { version = "0.10", optional = true }
 zeroize = { version = "1.7", features = ["zeroize_derive"], optional = true }
 regex = { version = "1.10", optional = true }
 
-# System (always required)
-rustc_version_runtime = "0.2"
-gethostname = "0.4"
+# Always required
 bs58 = "0.5.1"
-anyhow = "1.0.102"
-oxrdf = "0.3.3"
-rand_chacha = "0.10.0"
-statistical = "1.0.0"
-num_cpus = "1.17.0"
 
 [dev-dependencies]
 tempfile = "3.8"
-criterion = "0.5"
-md5 = "0.7"
 
 [features]
 default = ["std"]
 std = ["rand_core/std", "getrandom/std"]
-masking = [] 
-bincode = ["dep:bincode"]
+masking = []
 
-# Base serialization (for enterprise examples)
-serde_support = ["dep:serde", "dep:serde_json", "dep:base64", "dep:bincode", "dep:hex"]
-
-# PQC operations (for enterprise examples)  
+serde_support = ["dep:serde", "dep:serde_json", "dep:base64", "dep:hex"]
 pqc = ["dep:rayon", "dep:csv"]
 
-# W3C Verifiable Credentials (includes multibase for DID support)
 w3c = [
     "dep:serde",
     "dep:serde_json",
@@ -89,10 +73,9 @@ w3c = [
     "dep:reqwest"
 ]
 
-# Medical compliance feature set
 medical = [
     "dep:serde",
-    "dep:serde_json", 
+    "dep:serde_json",
     "dep:base64",
     "dep:bincode",
     "dep:uuid",
@@ -104,7 +87,6 @@ medical = [
     "dep:hex"
 ]
 
-# HSM feature set - for standalone Hardware Security Module
 hsm = [
     "dep:serde",
     "dep:serde_json",
@@ -119,19 +101,23 @@ opt-level = 3
 lto = true
 codegen-units = 1
 
-# ============ BASIC EXAMPLES ============
+# ============ EXAMPLES ============
 [[example]]
-name = "usage"
-required-features = ["std"]
+name = "sign_verify_demo"
+path = "examples/sign_verify_demo.rs"
+
+[[example]]
+name = "standard_test"
+path = "examples/standard_test.rs"
+
+[[example]]
+name = "practice_basic"
+path = "examples/practice_basic.rs"
 
 [[example]]
 name = "verify_vc"
 path = "examples/verify_vc.rs"
 required-features = ["w3c"]
-
-[[example]]
-name = "sign_verify_demo"
-path = "examples/sign_verify_demo.rs"
 
 [[example]]
 name = "verify_vc_rdfc"
@@ -149,9 +135,8 @@ path = "examples/did_document_demo.rs"
 required-features = ["w3c"]
 
 [[example]]
-name = "verify_outputs"
-path = "examples/verify_outputs.rs"
-required-features = ["serde_support"]
+name = "w3c_vc_demo"
+required-features = ["w3c"]
 
 [[example]]
 name = "sign_verify_demo_masked"
@@ -159,14 +144,10 @@ path = "examples/sign_verify_demo.rs"
 required-features = ["masking"]
 
 [[example]]
-name = "standard_test"
-path = "examples/standard_test.rs"
+name = "verify_outputs"
+path = "examples/verify_outputs.rs"
+required-features = ["serde_support"]
 
-[[example]]
-name = "w3c_vc_demo"
-required-features = ["w3c"]
-
-# ============ ENTERPRISE EXAMPLES ============
 [[example]]
 name = "enterprise_keygen"
 path = "examples/enterprise_keygen.rs"
@@ -195,25 +176,28 @@ required-features = ["serde_support", "pqc"]
 [[example]]
 name = "key_rotation"
 path = "examples/key_rotation.rs"
-required-features = ["serde_support", "pqc", "dep:chrono"]
+required-features = ["serde_support", "pqc", "chrono"]
 
 [[example]]
 name = "audit_logging"
 path = "examples/audit_logging.rs"
-required-features = ["serde_support", "pqc", "dep:chrono"]
+required-features = ["serde_support", "pqc", "chrono"]
 
-# ============ MEDICAL COMPLIANCE EXAMPLE ============
 [[example]]
 name = "medical_compliance"
 path = "examples/medical_compliance.rs"
 required-features = ["medical"]
 
-# ============ HARDWARE SECURITY MODULE EXAMPLE ============
 [[example]]
 name = "sirraya_hsm"
 path = "examples/sirraya_hsm.rs"
 required-features = ["hsm"]
 
-[[example]]
-name = "practice_basic"
-path = "examples/practice_basic.rs"
+[[bin]]
+name = "ml-dsa-65"
+path = "src/main.rs"
+
+[[bin]]
+name = "vc_verify"
+path = "src/vc_verifier.rs"
+required-features = ["w3c"]
