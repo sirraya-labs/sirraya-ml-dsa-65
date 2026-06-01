@@ -1,6 +1,6 @@
 // examples/verify_vc.rs
 // Verify a W3C Verifiable Credential with ML-DSA-65
-// cryptosuite: mldsa65-rdfc-2024
+// cryptosuite: mldsa65-jcs-2024
 //
 // Usage: cargo run --example verify_vc --features w3c -- <credential.json>
 
@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("================================================================================");
     println!("        ML-DSA-65 W3C Verifiable Credential Verification");
-    println!("        Cryptosuite: mldsa65-rdfc-2024");
+    println!("        Cryptosuite: mldsa65-jcs-2024");
     println!("================================================================================");
     println!();
 
@@ -192,7 +192,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("--------------------------------------------------------------------------------");
     println!("CANONICALIZATION (JCS):");
-    println!("  [NOTE] Cryptosuite 'mldsa65-rdfc-2024' expects RDFC, using JCS as fallback");
+    println!("  [NOTE] Cryptosuite 'mldsa65-jcs-2024' expects RDFC, using JCS as fallback");
 
     let mut unsigned_vc = vc.clone();
     if let Some(obj) = unsigned_vc.as_object_mut() {
