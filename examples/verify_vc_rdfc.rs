@@ -13,14 +13,17 @@
 // Cryptographic Systems Division
 // Version: 1.0.0
 
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use ml_dsa_65::{MlDsa65, PUBLICKEYBYTES, SIGNBYTES};
-use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use sha3::{Shake256, digest::{Update, ExtendableOutput, XofReader}};
 use serde_json::Value;
-use std::fs;
-use std::time::Instant;
+use sha3::{
+    digest::{ExtendableOutput, Update, XofReader},
+    Shake256,
+};
 use std::collections::HashMap;
+use std::fs;
 use std::io::Write;
+use std::time::Instant;
 
 // ============================================================================
 // W3C Protocol Constants
@@ -64,26 +67,21 @@ impl VerificationReport {
             duration: std::time::Duration::from_secs(0),
         }
     }
-    
+
     fn add_section(&mut self, title: &str, content: &str) {
-        let section = format!(
-            "\n{}\n{}\n\n{}\n",
-            title,
-            "=".repeat(title.len()),
-            content
-        );
+        let section = format!("\n{}\n{}\n\n{}\n", title, "=".repeat(title.len()), content);
         self.sections.push(section);
     }
-    
+
     fn set_result(&mut self, success: bool, cryptosuite: &str, duration: std::time::Duration) {
         self.success = success;
         self.cryptosuite = cryptosuite.to_string();
         self.duration = duration;
     }
-    
+
     fn generate(&self) -> String {
         let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-        
+
         let header = format!(
             r#"================================================================================
 SIRRAYA LABS - CRYPTOGRAPHIC VERIFICATION REPORT
@@ -101,7 +99,7 @@ Total Processing Time: {} ms
             self.cryptosuite,
             self.duration.as_millis()
         );
-        
+
         let footer = if self.success {
             r#"
 ================================================================================
@@ -145,10 +143,10 @@ Confidential - Proprietary Information
 ================================================================================
 "#
         };
-        
+
         format!("{}{}{}", header, self.sections.join(""), footer)
     }
-    
+
     fn save_to_file(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let report_content = self.generate();
         fs::write(path, &report_content)?;
@@ -165,100 +163,118 @@ Confidential - Proprietary Information
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut report = VerificationReport::new();
-    
+
     println!("SIRRAYA LABS - ML-DSA-65 W3C Verifiable Credential Validator");
     println!("Cryptographic Systems Division\n");
-    
+
     let vc_path = "test_vc.json";
     let verification_start = Instant::now();
-    
+
     // Step 1: Load and validate credential structure
     println!("[1/9] Loading credential...");
     let vc_json = load_credential_file(vc_path)?;
     let credential: Value = parse_credential_json(&vc_json)?;
     let metadata_section = format_credential_metadata(&credential);
     report.add_section("CREDENTIAL METADATA", &metadata_section);
-    
+
     // Step 2: Extract proof components per W3C Data Integrity spec
     println!("[2/9] Extracting proof components...");
     let proof_object = extract_proof_object(&credential)?;
     let proof_data = parse_proof_components(proof_object)?;
     let proof_section = format_proof_summary(&proof_data);
     report.add_section("PROOF CONFIGURATION", &proof_section);
-    
+
     // Step 3: Decode signature with multibase awareness
     println!("[3/9] Decoding signature (multibase-aware)...");
     let signature_bytes = decode_multibase_encoded_signature(&proof_data.sig_value)?;
     let sig_analysis = format_signature_analysis(&signature_bytes, &proof_data.cryptosuite);
     report.add_section("SIGNATURE DECODING", &sig_analysis);
-    
+
     // Step 4: Extract public key from DID identifier
     println!("[4/9] Resolving public key from DID...");
     let public_key_bytes = resolve_did_key_public_key(&proof_data.vm)?;
     let pk_analysis = format_public_key_analysis(&public_key_bytes);
     report.add_section("PUBLIC KEY RESOLUTION", &pk_analysis);
-    
+
     // Step 5: Validate signature structure against algorithm parameters
     println!("[5/9] Validating signature structure...");
     validate_signature_bytes_structure(&signature_bytes, &proof_data.cryptosuite)?;
-    let structure_validation = format_signature_structure_validation(&signature_bytes, &proof_data.cryptosuite);
+    let structure_validation =
+        format_signature_structure_validation(&signature_bytes, &proof_data.cryptosuite);
     report.add_section("SIGNATURE STRUCTURE VALIDATION", &structure_validation);
-    
+
     // Step 6: Self-test cryptographic primitives
     println!("[6/9] Validating cryptographic primitives...");
     perform_cryptographic_self_test()?;
     report.add_section("CRYPTOGRAPHIC PRIMITIVE VALIDATION", "ML-DSA-65 implementation self-test passed successfully.\nAll cryptographic operations functioning correctly.");
-    
+
     // Step 7: JCS canonicalization per RFC 8785
     println!("[7/9] Performing JCS canonicalization...");
-    let (canonical_doc, canonical_config, verification_message) = 
+    let (canonical_doc, canonical_config, verification_message) =
         construct_verification_message(&credential, proof_object)?;
-    let canon_section = format_canonicalization_results(&canonical_doc, &canonical_config, &verification_message);
+    let canon_section =
+        format_canonicalization_results(&canonical_doc, &canonical_config, &verification_message);
     report.add_section("CANONICALIZATION RESULTS", &canon_section);
-    
+
     // Step 8: Execute ML-DSA-65 signature verification
     println!("[8/9] Verifying signature...");
-    let verification_outcome = execute_signature_verification(
-        &public_key_bytes, 
-        &verification_message, 
-        &signature_bytes
-    )?;
-    report.add_section("SIGNATURE VERIFICATION", 
-        if verification_outcome { "Signature verification: SUCCESSFUL\nCryptographic integrity confirmed." } 
-        else { "Signature verification: FAILED\nCryptographic integrity could not be confirmed." });
-    
+    let verification_outcome =
+        execute_signature_verification(&public_key_bytes, &verification_message, &signature_bytes)?;
+    report.add_section(
+        "SIGNATURE VERIFICATION",
+        if verification_outcome {
+            "Signature verification: SUCCESSFUL\nCryptographic integrity confirmed."
+        } else {
+            "Signature verification: FAILED\nCryptographic integrity could not be confirmed."
+        },
+    );
+
     // Step 9: Additional W3C compliance validation
     println!("[9/9] Validating W3C compliance...");
-    let compliance_section = validate_and_format_w3c_compliance(&credential, proof_object, &proof_data);
+    let compliance_section =
+        validate_and_format_w3c_compliance(&credential, proof_object, &proof_data);
     report.add_section("W3C COMPLIANCE ASSESSMENT", &compliance_section);
-    
+
     // Finalize report
     let total_duration = verification_start.elapsed();
-    report.set_result(verification_outcome, &proof_data.cryptosuite, total_duration);
-    
+    report.set_result(
+        verification_outcome,
+        &proof_data.cryptosuite,
+        total_duration,
+    );
+
     // Save report to file
-    let report_filename = format!("verification_report_{}.txt", 
-        chrono::Local::now().format("%Y%m%d_%H%M%S"));
+    let report_filename = format!(
+        "verification_report_{}.txt",
+        chrono::Local::now().format("%Y%m%d_%H%M%S")
+    );
     report.save_to_file(&report_filename)?;
-    
+
     // Display summary to console
     println!("\nVerification complete.");
-    println!("Status: {}", if verification_outcome { "SUCCESSFUL" } else { "FAILED" });
+    println!(
+        "Status: {}",
+        if verification_outcome {
+            "SUCCESSFUL"
+        } else {
+            "FAILED"
+        }
+    );
     println!("Report saved: {}", report_filename);
-    
+
     // Persist debug data for failed verifications
     if !verification_outcome {
         println!("\nPersisting forensic analysis artifacts...");
         persist_debug_artifacts(
-            &vc_json, 
-            &public_key_bytes, 
-            &signature_bytes, 
-            &canonical_doc, 
-            &canonical_config, 
-            &verification_message
+            &vc_json,
+            &public_key_bytes,
+            &signature_bytes,
+            &canonical_doc,
+            &canonical_config,
+            &verification_message,
         )?;
     }
-    
+
     Ok(())
 }
 
@@ -289,31 +305,42 @@ struct ProofComponents {
 
 fn format_credential_metadata(credential: &Value) -> String {
     let mut output = String::new();
-    
+
     let credential_id = credential["id"].as_str().unwrap_or("[UNSPECIFIED]");
     let issuer_identifier = credential["issuer"].as_str().unwrap_or("[UNSPECIFIED]");
-    let issuance_timestamp = credential["issuanceDate"].as_str().unwrap_or("[UNSPECIFIED]");
-    
+    let issuance_timestamp = credential["issuanceDate"]
+        .as_str()
+        .unwrap_or("[UNSPECIFIED]");
+
     output.push_str(&format!("ID: {}\n", credential_id));
     output.push_str(&format!("Issuer: {}\n", issuer_identifier));
     output.push_str(&format!("Issuance Date: {}\n", issuance_timestamp));
-    
+
     if let Some(type_array) = credential["type"].as_array() {
-        let types: Vec<String> = type_array.iter()
+        let types: Vec<String> = type_array
+            .iter()
             .filter_map(|t| t.as_str().map(String::from))
             .collect();
         output.push_str(&format!("Types: {}\n", types.join(" → ")));
     }
-    
+
     if let Some(context_array) = credential["@context"].as_array() {
         let has_w3c_v2_context = context_array.iter().any(|ctx| {
-            ctx.as_str().map(|s| s.contains("w3.org/ns/credentials/v2")).unwrap_or(false)
+            ctx.as_str()
+                .map(|s| s.contains("w3.org/ns/credentials/v2"))
+                .unwrap_or(false)
         });
-        
-        output.push_str(&format!("Context: {}\n", 
-            if has_w3c_v2_context { "W3C Credentials v2" } else { "Non-standard" }));
+
+        output.push_str(&format!(
+            "Context: {}\n",
+            if has_w3c_v2_context {
+                "W3C Credentials v2"
+            } else {
+                "Non-standard"
+            }
+        ));
     }
-    
+
     output
 }
 
@@ -341,31 +368,47 @@ fn format_signature_analysis(signature_bytes: &[u8], cryptosuite: &str) -> Strin
         s if s.contains("87") => 4627,
         _ => 3309,
     };
-    
+
     format!(
         "Total Size: {} bytes\n\
          Initial Bytes: {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x}\n\
          Expected Size: {} bytes ({})\n\
          Size Validation: {}",
         signature_bytes.len(),
-        signature_bytes[0], signature_bytes[1], signature_bytes[2], signature_bytes[3],
-        signature_bytes[4], signature_bytes[5], signature_bytes[6], signature_bytes[7],
+        signature_bytes[0],
+        signature_bytes[1],
+        signature_bytes[2],
+        signature_bytes[3],
+        signature_bytes[4],
+        signature_bytes[5],
+        signature_bytes[6],
+        signature_bytes[7],
         expected_size,
         cryptosuite,
-        if signature_bytes.len() == expected_size { "PASSED" } else { "FAILED" }
+        if signature_bytes.len() == expected_size {
+            "PASSED"
+        } else {
+            "FAILED"
+        }
     )
 }
 
 fn format_public_key_analysis(public_key_bytes: &[u8]) -> String {
     let entropy_score = calculate_byte_entropy(public_key_bytes);
-    
+
     format!(
         "Length: {} bytes\n\
          Initial Bytes: {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x} {:02x}\n\
          Entropy: {:.2} bits/byte (max 8.0)",
         public_key_bytes.len(),
-        public_key_bytes[0], public_key_bytes[1], public_key_bytes[2], public_key_bytes[3],
-        public_key_bytes[4], public_key_bytes[5], public_key_bytes[6], public_key_bytes[7],
+        public_key_bytes[0],
+        public_key_bytes[1],
+        public_key_bytes[2],
+        public_key_bytes[3],
+        public_key_bytes[4],
+        public_key_bytes[5],
+        public_key_bytes[6],
+        public_key_bytes[7],
         entropy_score
     )
 }
@@ -377,7 +420,7 @@ fn format_signature_structure_validation(signature_bytes: &[u8], cryptosuite: &s
         s if s.contains("87") => ("ML-DSA-87", 7, 8, 4627),
         _ => ("ML-DSA-65", 5, 6, 3309),
     };
-    
+
     format!(
         "Algorithm: {}\n\
          L Parameter (rows): {}\n\
@@ -395,7 +438,11 @@ fn format_signature_structure_validation(signature_bytes: &[u8], cryptosuite: &s
         total_expected - 32 - (l_parameter * 640),
         total_expected,
         signature_bytes.len(),
-        if signature_bytes.len() == total_expected { "PASSED" } else { "FAILED" }
+        if signature_bytes.len() == total_expected {
+            "PASSED"
+        } else {
+            "FAILED"
+        }
     )
 }
 
@@ -413,45 +460,80 @@ fn format_canonicalization_results(doc: &str, config: &str, message: &[u8]) -> S
     )
 }
 
-fn validate_and_format_w3c_compliance(credential: &Value, _proof: &Value, components: &ProofComponents) -> String {
+fn validate_and_format_w3c_compliance(
+    credential: &Value,
+    _proof: &Value,
+    components: &ProofComponents,
+) -> String {
     let mut output = String::new();
     let mut all_compliant = true;
-    
+
     // Check W3C v2 context
     if let Some(contexts) = credential["@context"].as_array() {
         let has_v2_context = contexts.iter().any(|c| {
-            c.as_str().map(|s| s.contains("w3.org/ns/credentials/v2")).unwrap_or(false)
+            c.as_str()
+                .map(|s| s.contains("w3.org/ns/credentials/v2"))
+                .unwrap_or(false)
         });
-        
-        output.push_str(&format!("W3C Credentials v2 Context: {}\n", 
-            if has_v2_context { "PRESENT" } else { "MISSING" }));
-        if !has_v2_context { all_compliant = false; }
+
+        output.push_str(&format!(
+            "W3C Credentials v2 Context: {}\n",
+            if has_v2_context { "PRESENT" } else { "MISSING" }
+        ));
+        if !has_v2_context {
+            all_compliant = false;
+        }
     }
-    
+
     // Check VerifiableCredential type
     if let Some(types) = credential["type"].as_array() {
-        let has_vc_type = types.iter().any(|t| t.as_str() == Some("VerifiableCredential"));
-        
-        output.push_str(&format!("VerifiableCredential Type: {}\n", 
-            if has_vc_type { "PRESENT" } else { "MISSING" }));
-        if !has_vc_type { all_compliant = false; }
+        let has_vc_type = types
+            .iter()
+            .any(|t| t.as_str() == Some("VerifiableCredential"));
+
+        output.push_str(&format!(
+            "VerifiableCredential Type: {}\n",
+            if has_vc_type { "PRESENT" } else { "MISSING" }
+        ));
+        if !has_vc_type {
+            all_compliant = false;
+        }
     }
-    
+
     // Check proof type
-    output.push_str(&format!("Proof Type: {} {}\n", 
+    output.push_str(&format!(
+        "Proof Type: {} {}\n",
         components.proof_type,
-        if components.proof_type == "DataIntegrityProof" { "(STANDARD)" } else { "(NON-STANDARD)" }));
-    if components.proof_type != "DataIntegrityProof" { all_compliant = false; }
-    
+        if components.proof_type == "DataIntegrityProof" {
+            "(STANDARD)"
+        } else {
+            "(NON-STANDARD)"
+        }
+    ));
+    if components.proof_type != "DataIntegrityProof" {
+        all_compliant = false;
+    }
+
     // Check cryptosuite format
-    output.push_str(&format!("Cryptosuite Format: {} {}\n",
+    output.push_str(&format!(
+        "Cryptosuite Format: {} {}\n",
         components.cryptosuite,
-        if components.cryptosuite.contains("mldsa") && components.cryptosuite.contains("2024") 
-            { "(STANDARD)" } else { "(NON-STANDARD)" }));
-    
-    output.push_str(&format!("\nOverall Compliance: {}", 
-        if all_compliant { "COMPLIANT" } else { "PARTIAL - See notes above" }));
-    
+        if components.cryptosuite.contains("mldsa") && components.cryptosuite.contains("2024") {
+            "(STANDARD)"
+        } else {
+            "(NON-STANDARD)"
+        }
+    ));
+
+    output.push_str(&format!(
+        "\nOverall Compliance: {}",
+        if all_compliant {
+            "COMPLIANT"
+        } else {
+            "PARTIAL - See notes above"
+        }
+    ));
+
     output
 }
 
@@ -481,8 +563,12 @@ fn parse_credential_json(json_content: &str) -> Result<Value, Box<dyn std::error
             Ok(parsed)
         }
         Err(e) => {
-            eprintln!("  ERROR: JSON parsing failed at line {}, column {}: {}", 
-                e.line(), e.column(), e);
+            eprintln!(
+                "  ERROR: JSON parsing failed at line {}, column {}: {}",
+                e.line(),
+                e.column(),
+                e
+            );
             Err(e.into())
         }
     }
@@ -515,10 +601,7 @@ fn parse_proof_components(proof: &Value) -> Result<ProofComponents, Box<dyn std:
             .as_str()
             .unwrap_or("unknown")
             .to_string(),
-        created: proof["created"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string(),
+        created: proof["created"].as_str().unwrap_or("unknown").to_string(),
         proof_type: proof["type"]
             .as_str()
             .unwrap_or("DataIntegrityProof")
@@ -535,13 +618,15 @@ fn parse_proof_components(proof: &Value) -> Result<ProofComponents, Box<dyn std:
 // ============================================================================
 
 /// Decodes a multibase-encoded signature according to W3C Data Integrity specification
-fn decode_multibase_encoded_signature(encoded_signature: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+fn decode_multibase_encoded_signature(
+    encoded_signature: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     if encoded_signature.is_empty() {
         return Err("Empty signature string".into());
     }
-    
+
     let multibase_prefix = encoded_signature.chars().next().unwrap();
-    
+
     match multibase_prefix {
         MULTIBASE_BASE64URL_PREFIX => {
             println!("  Multibase prefix 'u' detected (standard)");
@@ -562,13 +647,18 @@ fn decode_multibase_encoded_signature(encoded_signature: &str) -> Result<Vec<u8>
 
 /// Decodes base64url-no-pad encoded data with fallback manual implementation
 fn decode_base64url_no_pad(encoded_data: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let sanitized: String = encoded_data.chars()
+    let sanitized: String = encoded_data
+        .chars()
         .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
         .collect();
-    
+
     match URL_SAFE_NO_PAD.decode(&sanitized) {
         Ok(decoded_bytes) => {
-            println!("  Decoded: {} chars → {} bytes", sanitized.len(), decoded_bytes.len());
+            println!(
+                "  Decoded: {} chars → {} bytes",
+                sanitized.len(),
+                decoded_bytes.len()
+            );
             Ok(decoded_bytes)
         }
         Err(_) => {
@@ -583,7 +673,7 @@ fn manual_base64url_decode(input: &str) -> Result<Vec<u8>, Box<dyn std::error::E
     let mut output_buffer = Vec::new();
     let mut accumulator = 0u32;
     let mut bits_accumulated = 0;
-    
+
     for character in input.chars() {
         let decoded_value = match character {
             'A'..='Z' => character as u8 - b'A',
@@ -593,22 +683,26 @@ fn manual_base64url_decode(input: &str) -> Result<Vec<u8>, Box<dyn std::error::E
             '_' => 63,
             _ => continue,
         };
-        
+
         accumulator = (accumulator << 6) | (decoded_value as u32);
         bits_accumulated += 6;
-        
+
         if bits_accumulated >= 8 {
             bits_accumulated -= 8;
             output_buffer.push((accumulator >> bits_accumulated) as u8);
             accumulator &= (1 << bits_accumulated) - 1;
         }
     }
-    
+
     if output_buffer.is_empty() {
         return Err("Manual decoding produced no output bytes".into());
     }
-    
-    println!("  Manual decode: {} chars → {} bytes", input.len(), output_buffer.len());
+
+    println!(
+        "  Manual decode: {} chars → {} bytes",
+        input.len(),
+        output_buffer.len()
+    );
     Ok(output_buffer)
 }
 
@@ -626,34 +720,47 @@ fn decode_base58btc_signature(encoded_data: &str) -> Result<Vec<u8>, Box<dyn std
 
 /// Extracts public key from a W3C-compliant did:key identifier
 fn resolve_did_key_public_key(did_identifier: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let did_without_fragment = did_identifier.split('#').next().ok_or("Malformed DID identifier")?;
-    
+    let did_without_fragment = did_identifier
+        .split('#')
+        .next()
+        .ok_or("Malformed DID identifier")?;
+
     if !did_without_fragment.starts_with("did:key:z") {
-        return Err(format!("Unsupported DID method (expected did:key:z): {}", did_without_fragment).into());
+        return Err(format!(
+            "Unsupported DID method (expected did:key:z): {}",
+            did_without_fragment
+        )
+        .into());
     }
-    
+
     let encoded_component = &did_without_fragment[9..];
-    
+
     let decoded_bytes = bs58::decode(encoded_component)
         .with_alphabet(bs58::Alphabet::BITCOIN)
         .into_vec()
         .map_err(|e| format!("Base58BTC decode error: {}", e))?;
-    
-    println!("  DID decoded: {} bytes (multicodec + public key)", decoded_bytes.len());
-    
+
+    println!(
+        "  DID decoded: {} bytes (multicodec + public key)",
+        decoded_bytes.len()
+    );
+
     if decoded_bytes.len() < 2 + PUBLICKEYBYTES {
         return Err(format!("Invalid key length: {} bytes", decoded_bytes.len()).into());
     }
-    
+
     let multicodec_value = u16::from_be_bytes([decoded_bytes[0], decoded_bytes[1]]);
-    println!("  Multicodec: 0x{:04x} (ML-DSA-{})", multicodec_value,
+    println!(
+        "  Multicodec: 0x{:04x} (ML-DSA-{})",
+        multicodec_value,
         match multicodec_value {
             MULTICODEC_MLDSA65 => "65",
             0x1304 => "44",
             0x1306 => "87",
             _ => "Unknown",
-        });
-    
+        }
+    );
+
     let public_key_bytes = decoded_bytes[2..2 + PUBLICKEYBYTES].to_vec();
     Ok(public_key_bytes)
 }
@@ -664,12 +771,17 @@ fn calculate_byte_entropy(data: &[u8]) -> f64 {
     for &byte in data {
         *frequency_map.entry(byte).or_insert(0) += 1;
     }
-    
+
     let total_bytes = data.len() as f64;
-    frequency_map.values()
+    frequency_map
+        .values()
         .map(|&count| {
             let probability = count as f64 / total_bytes;
-            if probability > 0.0 { -probability * probability.log2() } else { 0.0 }
+            if probability > 0.0 {
+                -probability * probability.log2()
+            } else {
+                0.0
+            }
         })
         .sum()
 }
@@ -679,20 +791,29 @@ fn calculate_byte_entropy(data: &[u8]) -> f64 {
 // ============================================================================
 
 /// Validates signature byte structure against ML-DSA algorithm parameters
-fn validate_signature_bytes_structure(signature_bytes: &[u8], cryptosuite: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn validate_signature_bytes_structure(
+    signature_bytes: &[u8],
+    cryptosuite: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     let expected_size = match cryptosuite {
         s if s.contains("44") => 2420,
         s if s.contains("65") => 3309,
         s if s.contains("87") => 4627,
         _ => 3309,
     };
-    
+
     if signature_bytes.len() == expected_size {
-        println!("  Signature structure: VALID ({} bytes)", signature_bytes.len());
+        println!(
+            "  Signature structure: VALID ({} bytes)",
+            signature_bytes.len()
+        );
         Ok(())
     } else {
-        eprintln!("  Signature structure: INVALID (expected {} bytes, got {})", 
-            expected_size, signature_bytes.len());
+        eprintln!(
+            "  Signature structure: INVALID (expected {} bytes, got {})",
+            expected_size,
+            signature_bytes.len()
+        );
         Err(format!("Size mismatch").into())
     }
 }
@@ -704,10 +825,10 @@ fn validate_signature_bytes_structure(signature_bytes: &[u8], cryptosuite: &str)
 /// Performs comprehensive self-test of ML-DSA-65 implementation
 fn perform_cryptographic_self_test() -> Result<(), Box<dyn std::error::Error>> {
     let (public_key, secret_key) = MlDsa65::keypair()?;
-    
+
     let test_message = b"ML-DSA-65 W3C compliance validation vector";
     let signature = MlDsa65::sign(&secret_key, test_message)?;
-    
+
     match MlDsa65::verify(&public_key, test_message, &signature) {
         Ok(true) => {
             println!("  Self-test: PASSED");
@@ -730,27 +851,34 @@ fn construct_verification_message(
     if let Some(obj) = unsigned_credential.as_object_mut() {
         obj.remove("proof");
     }
-    
+
     let mut proof_configuration = proof.clone();
     if let Some(obj) = proof_configuration.as_object_mut() {
         obj.remove("proofValue");
     }
-    
+
     let canonical_credential = apply_jcs_canonicalization(&unsigned_credential);
     let canonical_proof_config = apply_jcs_canonicalization(&proof_configuration);
-    
+
     let mut hasher = Shake256::default();
     Update::update(&mut hasher, canonical_credential.as_bytes());
     Update::update(&mut hasher, canonical_proof_config.as_bytes());
-    
+
     let mut verification_message = vec![0u8; 64];
     hasher.finalize_xof().read(&mut verification_message);
-    
-    println!("  Canonicalized: {} + {} = {} bytes → 64 byte message",
-        canonical_credential.len(), canonical_proof_config.len(),
-        canonical_credential.len() + canonical_proof_config.len());
-    
-    Ok((canonical_credential, canonical_proof_config, verification_message))
+
+    println!(
+        "  Canonicalized: {} + {} = {} bytes → 64 byte message",
+        canonical_credential.len(),
+        canonical_proof_config.len(),
+        canonical_credential.len() + canonical_proof_config.len()
+    );
+
+    Ok((
+        canonical_credential,
+        canonical_proof_config,
+        verification_message,
+    ))
 }
 
 /// Applies JSON Canonicalization Scheme (JCS) per RFC 8785
@@ -759,7 +887,8 @@ fn apply_jcs_canonicalization(value: &Value) -> String {
         Value::Object(map) => {
             let mut sorted_entries: Vec<(&String, &Value)> = map.iter().collect();
             sorted_entries.sort_by(|a, b| a.0.cmp(b.0));
-            let serialized_items: Vec<String> = sorted_entries.iter()
+            let serialized_items: Vec<String> = sorted_entries
+                .iter()
                 .map(|(key, val)| format!("\"{}\":{}", key, apply_jcs_canonicalization(val)))
                 .collect();
             format!("{{{}}}", serialized_items.join(","))
@@ -787,10 +916,10 @@ fn execute_signature_verification(
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut public_key_array = [0u8; PUBLICKEYBYTES];
     let mut signature_array = [0u8; SIGNBYTES];
-    
+
     public_key_array.copy_from_slice(public_key_bytes);
     signature_array[..signature_bytes.len()].copy_from_slice(signature_bytes);
-    
+
     match MlDsa65::verify(&public_key_array, verification_message, &signature_array) {
         Ok(true) => {
             println!("  Verification: SUCCESSFUL");
@@ -827,7 +956,7 @@ fn persist_debug_artifacts(
     fs::write("analysis_canonical_doc.txt", canonical_doc)?;
     fs::write("analysis_canonical_config.txt", canonical_config)?;
     fs::write("analysis_message.bin", verification_message)?;
-    
+
     println!("  Forensic artifacts saved to current directory");
     Ok(())
 }

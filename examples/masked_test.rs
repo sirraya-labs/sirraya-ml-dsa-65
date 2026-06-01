@@ -1,8 +1,8 @@
 // examples/masked_test.rs
 #![cfg(feature = "masking")]
 
+use dilithium5::dilithium_masked::masked::{masked_sign, MaskedSecretKey};
 use dilithium5::dilithium_masked::Dilithium5;
-use dilithium5::dilithium_masked::masked::{MaskedSecretKey, masked_sign};
 use rand::rngs::OsRng;
 use std::time::Instant;
 
@@ -79,7 +79,7 @@ fn create_di_test_vector(
     verification_time: std::time::Duration,
 ) -> serde_json::Value {
     let multikey = to_multikey(pk);
-    
+
     json!({
         "test_vector": {
             "name": "ML-DSA-87 with SUCRE Masking",
@@ -141,13 +141,13 @@ fn generate_jcs_proof_test_vector(
     let multikey = to_multikey(pk);
     let created = chrono::Utc::now().to_rfc3339();
     let proof_value_base64 = BASE64.encode(sig);
-    
+
     // Build the canonicalized proof example string properly
     let canonicalized_example = format!(
         "{{\"@context\":[\"https://www.w3.org/ns/credentials/v2\"],\"created\":\"{}\",\"cryptosuite\":\"mldsa87-jcs-2024\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"{}\",\"type\":\"DataIntegrityProof\",\"verificationMethod\":\"did:example:test#keys-1\"}}",
         created, proof_value_base64
     );
-    
+
     // Create a proof object as specified in di-quantum-safe spec
     let proof_object = json!({
         "@context": ["https://www.w3.org/ns/credentials/v2"],
@@ -158,7 +158,7 @@ fn generate_jcs_proof_test_vector(
         "proofPurpose": "assertionMethod",
         "proofValue": proof_value_base64
     });
-    
+
     json!({
         "jcs_proof_test_vector": {
             "description": "Test vector for ML-DSA-87 with JCS canonicalization",
@@ -206,13 +206,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 3. Sign with masked implementation (with timing)
     println!("3. Signing with masked implementation (SUCRE)...");
     let msg = b"Side-channel resistant signature test";
-    
+
     let signing_start = Instant::now();
     let sig = masked_sign(&mut masked_sk, msg, &mut rng)?;
     let signing_time = signing_start.elapsed();
-    
+
     println!("   ✓ Signature: {} bytes", sig.len());
-    println!("   ✓ Signing time: {:.2} ms", signing_time.as_secs_f64() * 1000.0);
+    println!(
+        "   ✓ Signing time: {:.2} ms",
+        signing_time.as_secs_f64() * 1000.0
+    );
     println!("   First 32 bytes: {:02x?}...\n", &sig[..32]);
 
     // 4. Verify with normal verification (with timing)
@@ -220,32 +223,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let verification_start = Instant::now();
     let valid = Dilithium5::verify(&pk, msg, &sig)?;
     let verification_time = verification_start.elapsed();
-    
-    println!("   ✓ Verification time: {:.2} ms", verification_time.as_secs_f64() * 1000.0);
-    println!("   ✓ Verification: {}\n", if valid { "VALID ✓" } else { "INVALID ✗" });
+
+    println!(
+        "   ✓ Verification time: {:.2} ms",
+        verification_time.as_secs_f64() * 1000.0
+    );
+    println!(
+        "   ✓ Verification: {}\n",
+        if valid { "VALID ✓" } else { "INVALID ✗" }
+    );
 
     // 5. Zeroize the masked secret key
     masked_sk.zeroize();
-    
+
     #[cfg(not(feature = "w3c"))]
     {
         println!("5. Secret key zeroized ✓\n");
     }
-    
+
     #[cfg(feature = "w3c")]
     {
         println!("5. Generating W3C DI test vector (JCS + mldsa87-jcs-2024)...");
-        
+
         // Generate main test vector
         let test_vector = create_di_test_vector(msg, &pk, &sig, signing_time, verification_time);
-        fs::write("w3c_mldsa87_jcs_test_vector.json", 
-                  serde_json::to_string_pretty(&test_vector)?)?;
+        fs::write(
+            "w3c_mldsa87_jcs_test_vector.json",
+            serde_json::to_string_pretty(&test_vector)?,
+        )?;
         println!("   ✓ Test vector saved to: w3c_mldsa87_jcs_test_vector.json");
-        
+
         // Generate JCS proof test vector
         let jcs_vector = generate_jcs_proof_test_vector(&pk, &sig, signing_time, verification_time);
-        fs::write("w3c_mldsa87_jcs_proof_vector.json", 
-                  serde_json::to_string_pretty(&jcs_vector)?)?;
+        fs::write(
+            "w3c_mldsa87_jcs_proof_vector.json",
+            serde_json::to_string_pretty(&jcs_vector)?,
+        )?;
         println!("   ✓ JCS proof vector saved to: w3c_mldsa87_jcs_proof_vector.json\n");
 
         println!("6. W3C Multikey Format:");
@@ -273,9 +286,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         println!("8. Running quick benchmark (100 iterations)...");
         let bench_start = Instant::now();
-        
+
         let mut bench_masked_sk = MaskedSecretKey::from_plain(&sk, &mut rng)?;
-        
+
         for i in 0..100 {
             let test_msg = format!("Benchmark message {}", i).into_bytes();
             let bench_sig = masked_sign(&mut bench_masked_sk, &test_msg, &mut rng)?;
@@ -285,9 +298,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         let bench_time = bench_start.elapsed();
-        println!("   ✓ 100 sign+verify cycles: {:.2} ms", bench_time.as_secs_f64() * 1000.0);
-        println!("   ✓ Average per operation: {:.2} ms\n", bench_time.as_secs_f64() * 10.0);
-        
+        println!(
+            "   ✓ 100 sign+verify cycles: {:.2} ms",
+            bench_time.as_secs_f64() * 1000.0
+        );
+        println!(
+            "   ✓ Average per operation: {:.2} ms\n",
+            bench_time.as_secs_f64() * 10.0
+        );
+
         bench_masked_sk.zeroize();
         println!("9. Secret key zeroized ✓\n");
     }

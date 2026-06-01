@@ -6,18 +6,21 @@
 #![deny(rust_2018_idioms)]
 #![allow(elided_lifetimes_in_paths)]
 
-use dilithium5::Dilithium5;
 use aes_gcm::{
+    aead::{Aead, AeadCore, KeyInit, OsRng},
     Aes256Gcm, Key, Nonce,
-    aead::{Aead, AeadCore, KeyInit, OsRng}
 };
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use dilithium5::Dilithium5;
+use regex::Regex;
 use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{json, Value};
 use std::collections::VecDeque;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc, Mutex, RwLock,
+};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::sync::{Arc, Mutex, RwLock, atomic::{AtomicU64, Ordering}};
-use regex::Regex;
 use uuid::Uuid;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -56,27 +59,31 @@ impl<'de> Deserialize<'de> for DilithiumSecretKey {
         D: Deserializer<'de>,
     {
         struct KeyVisitor;
-        
+
         impl<'de> Visitor<'de> for KeyVisitor {
             type Value = DilithiumSecretKey;
-            
+
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 write!(formatter, "{} bytes", SECRETKEYBYTES)
             }
-            
+
             fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
                 if v.len() != SECRETKEYBYTES {
-                    return Err(E::custom(format!("expected {} bytes, got {}", SECRETKEYBYTES, v.len())));
+                    return Err(E::custom(format!(
+                        "expected {} bytes, got {}",
+                        SECRETKEYBYTES,
+                        v.len()
+                    )));
                 }
                 let mut bytes = [0u8; SECRETKEYBYTES];
                 bytes.copy_from_slice(v);
                 Ok(DilithiumSecretKey { bytes })
             }
         }
-        
+
         deserializer.deserialize_bytes(KeyVisitor)
     }
 }
@@ -101,27 +108,31 @@ impl<'de> Deserialize<'de> for DilithiumPublicKey {
         D: Deserializer<'de>,
     {
         struct KeyVisitor;
-        
+
         impl<'de> Visitor<'de> for KeyVisitor {
             type Value = DilithiumPublicKey;
-            
+
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 write!(formatter, "{} bytes", PUBLICKEYBYTES)
             }
-            
+
             fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
                 if v.len() != PUBLICKEYBYTES {
-                    return Err(E::custom(format!("expected {} bytes, got {}", PUBLICKEYBYTES, v.len())));
+                    return Err(E::custom(format!(
+                        "expected {} bytes, got {}",
+                        PUBLICKEYBYTES,
+                        v.len()
+                    )));
                 }
                 let mut bytes = [0u8; PUBLICKEYBYTES];
                 bytes.copy_from_slice(v);
                 Ok(DilithiumPublicKey { bytes })
             }
         }
-        
+
         deserializer.deserialize_bytes(KeyVisitor)
     }
 }
@@ -146,27 +157,31 @@ impl<'de> Deserialize<'de> for DilithiumSignature {
         D: Deserializer<'de>,
     {
         struct SigVisitor;
-        
+
         impl<'de> Visitor<'de> for SigVisitor {
             type Value = DilithiumSignature;
-            
+
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 write!(formatter, "{} bytes", SIGNBYTES)
             }
-            
+
             fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
                 if v.len() != SIGNBYTES {
-                    return Err(E::custom(format!("expected {} bytes, got {}", SIGNBYTES, v.len())));
+                    return Err(E::custom(format!(
+                        "expected {} bytes, got {}",
+                        SIGNBYTES,
+                        v.len()
+                    )));
                 }
                 let mut bytes = [0u8; SIGNBYTES];
                 bytes.copy_from_slice(v);
                 Ok(DilithiumSignature { bytes })
             }
         }
-        
+
         deserializer.deserialize_bytes(SigVisitor)
     }
 }
@@ -219,15 +234,16 @@ impl<'de> Deserialize<'de> for EncryptionKey {
         }
 
         let data = EncryptionKeyData::deserialize(deserializer)?;
-        
-        let aes_key = base64_deserialize(&data.aes_key)
-            .map_err(serde::de::Error::custom)?;
-        
+
+        let aes_key = base64_deserialize(&data.aes_key).map_err(serde::de::Error::custom)?;
+
         Ok(EncryptionKey {
             key_id: data.key_id,
             aes_key,
             dilithium_pk: data.dilithium_pk,
-            dilithium_sk: DilithiumSecretKey { bytes: [0u8; SECRETKEYBYTES] },
+            dilithium_sk: DilithiumSecretKey {
+                bytes: [0u8; SECRETKEYBYTES],
+            },
             created_at: data.created_at,
             expires_at: data.expires_at,
             version: data.version,
@@ -245,14 +261,14 @@ impl Drop for EncryptionKey {
 
 // Simple base64 helper functions (not serialization traits)
 fn base64_serialize(bytes: &[u8]) -> String {
-    use base64::Engine;
     use base64::engine::general_purpose::STANDARD;
+    use base64::Engine;
     STANDARD.encode(bytes)
 }
 
 fn base64_deserialize(s: &str) -> Result<Vec<u8>, base64::DecodeError> {
-    use base64::Engine;
     use base64::engine::general_purpose::STANDARD;
+    use base64::Engine;
     STANDARD.decode(s)
 }
 
@@ -270,20 +286,20 @@ impl KeyManager {
 
     fn generate_key() -> Result<EncryptionKey, Box<dyn std::error::Error>> {
         use aes_gcm::aead::rand_core::RngCore;
-        
+
         let mut aes_key = vec![0u8; 32];
         OsRng.fill_bytes(&mut aes_key);
-        
+
         let (pk, sk) = Dilithium5::keypair()?;
-        
+
         let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-        
+
         let mut pk_bytes = [0u8; PUBLICKEYBYTES];
         pk_bytes.copy_from_slice(&pk);
-        
+
         let mut sk_bytes = [0u8; SECRETKEYBYTES];
         sk_bytes.copy_from_slice(&sk);
-        
+
         Ok(EncryptionKey {
             key_id: Uuid::new_v4().to_string(),
             aes_key,
@@ -345,9 +361,9 @@ impl PHIDetector {
 
     pub fn analyze_record(&self, record: &MedicalRecord) -> PHIAnalysis {
         let json = serde_json::to_string(record).unwrap_or_default();
-        
+
         let mut findings = Vec::new();
-        
+
         for cap in self.ssn_regex.captures_iter(&json) {
             if let Some(m) = cap.get(0) {
                 findings.push(PHIFinding {
@@ -356,7 +372,7 @@ impl PHIDetector {
                 });
             }
         }
-        
+
         for cap in self.email_regex.captures_iter(&json) {
             if let Some(m) = cap.get(0) {
                 findings.push(PHIFinding {
@@ -365,7 +381,7 @@ impl PHIDetector {
                 });
             }
         }
-        
+
         for cap in self.phone_regex.captures_iter(&json) {
             if let Some(m) = cap.get(0) {
                 findings.push(PHIFinding {
@@ -374,7 +390,7 @@ impl PHIDetector {
                 });
             }
         }
-        
+
         PHIAnalysis {
             record_id: record.record_id.clone(),
             total_findings: findings.len(),
@@ -399,9 +415,9 @@ pub struct PHIFinding {
 // ============================================================================
 
 mod base64_serde {
-    use serde::{Serializer, Deserializer, Deserialize};
-    use base64::Engine;
     use base64::engine::general_purpose::STANDARD;
+    use base64::Engine;
+    use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -441,21 +457,26 @@ impl EncryptionOrchestrator {
         Ok(Self { key_manager })
     }
 
-    pub fn encrypt_record(&self, record: &MedicalRecord, _analysis: &PHIAnalysis) -> Result<EncryptedMedicalRecord, Box<dyn std::error::Error>> {
+    pub fn encrypt_record(
+        &self,
+        record: &MedicalRecord,
+        _analysis: &PHIAnalysis,
+    ) -> Result<EncryptedMedicalRecord, Box<dyn std::error::Error>> {
         let key = self.key_manager.get_active_key()?;
-        
+
         let key_array: &[u8; 32] = key.aes_key.as_slice().try_into()?;
         let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key_array));
         let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-        
+
         let record_bytes = serde_json::to_vec(record)?;
-        let ciphertext = cipher.encrypt(&nonce, record_bytes.as_ref())
+        let ciphertext = cipher
+            .encrypt(&nonce, record_bytes.as_ref())
             .map_err(|e| format!("AES encryption failed: {:?}", e))?;
-        
+
         let signature = Dilithium5::sign(&key.dilithium_sk.bytes, &ciphertext)?;
         let mut sig_bytes = [0u8; SIGNBYTES];
         sig_bytes.copy_from_slice(&signature);
-        
+
         Ok(EncryptedMedicalRecord {
             record_id: record.record_id.clone(),
             encrypted_payload: ciphertext,
@@ -467,26 +488,30 @@ impl EncryptionOrchestrator {
         })
     }
 
-    pub fn decrypt_record(&self, encrypted: &EncryptedMedicalRecord) -> Result<MedicalRecord, Box<dyn std::error::Error>> {
+    pub fn decrypt_record(
+        &self,
+        encrypted: &EncryptedMedicalRecord,
+    ) -> Result<MedicalRecord, Box<dyn std::error::Error>> {
         let key = self.key_manager.get_active_key()?;
-        
+
         let valid = Dilithium5::verify(
-            &key.dilithium_pk.bytes, 
-            &encrypted.encrypted_payload, 
-            &encrypted.signature.bytes
+            &key.dilithium_pk.bytes,
+            &encrypted.encrypted_payload,
+            &encrypted.signature.bytes,
         )?;
-        
+
         if !valid {
             return Err("Signature verification failed".into());
         }
-        
+
         let key_array: &[u8; 32] = key.aes_key.as_slice().try_into()?;
         let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key_array));
         let nonce = Nonce::from_slice(&encrypted.nonce);
-        
-        let plaintext = cipher.decrypt(nonce, encrypted.encrypted_payload.as_ref())
+
+        let plaintext = cipher
+            .decrypt(nonce, encrypted.encrypted_payload.as_ref())
             .map_err(|e| format!("AES decryption failed: {:?}", e))?;
-        
+
         let record: MedicalRecord = serde_json::from_slice(&plaintext)?;
         Ok(record)
     }
@@ -518,17 +543,24 @@ impl AuditLogger {
         })
     }
 
-    pub fn log(&self, entry: AuditEntryBuilder, signing_key: &[u8; SECRETKEYBYTES]) -> Result<AuditEntry, Box<dyn std::error::Error>> {
+    pub fn log(
+        &self,
+        entry: AuditEntryBuilder,
+        signing_key: &[u8; SECRETKEYBYTES],
+    ) -> Result<AuditEntry, Box<dyn std::error::Error>> {
         let mut chain = self.chain.write().unwrap();
-        
+
         let sequence = chain.len() as u64;
         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-        
-        let entry_data = format!("{}{}{}{}{:?}", sequence, timestamp, entry.actor, entry.action, entry.patient_id);
+
+        let entry_data = format!(
+            "{}{}{}{}{:?}",
+            sequence, timestamp, entry.actor, entry.action, entry.patient_id
+        );
         let signature = Dilithium5::sign(signing_key, entry_data.as_bytes())?;
         let mut sig_bytes = [0u8; SIGNBYTES];
         sig_bytes.copy_from_slice(&signature);
-        
+
         let audit_entry = AuditEntry {
             sequence,
             timestamp,
@@ -538,7 +570,7 @@ impl AuditLogger {
             patient_id: entry.patient_id,
             signature: DilithiumSignature { bytes: sig_bytes },
         };
-        
+
         chain.push(audit_entry.clone());
         Ok(audit_entry)
     }
@@ -610,13 +642,13 @@ impl MedicalComplianceEngine {
         println!("\nSIRRAYA MEDICAL COMPLIANCE ENGINE v{}", VERSION);
         println!("HIPAA · GDPR · HITECH · 21 CFR Part 11");
         println!("{}", "=".repeat(60));
-        
+
         let key_manager = Arc::new(KeyManager::new()?);
         let phi_detector = Arc::new(PHIDetector::new()?);
         let encryption_orchestrator = Arc::new(EncryptionOrchestrator::new(key_manager.clone())?);
         let audit_logger = Arc::new(AuditLogger::new()?);
         let breach_detector = Arc::new(BreachDetector::new()?);
-        
+
         Ok(Self {
             key_manager,
             phi_detector,
@@ -627,26 +659,34 @@ impl MedicalComplianceEngine {
         })
     }
 
-    pub fn process_record(&self, record: MedicalRecord) -> Result<EncryptedMedicalRecord, Box<dyn std::error::Error>> {
+    pub fn process_record(
+        &self,
+        record: MedicalRecord,
+    ) -> Result<EncryptedMedicalRecord, Box<dyn std::error::Error>> {
         self.records_processed.fetch_add(1, Ordering::Relaxed);
-        
+
         let analysis = self.phi_detector.analyze_record(&record);
-        
+
         if analysis.total_findings > 0 {
             println!("  PHI detected: {} instances", analysis.total_findings);
         }
-        
-        let encrypted = self.encryption_orchestrator.encrypt_record(&record, &analysis)?;
-        
+
+        let encrypted = self
+            .encryption_orchestrator
+            .encrypt_record(&record, &analysis)?;
+
         let key = self.key_manager.get_active_key()?;
         let audit_entry = AuditEntryBuilder::new(
             record.created_by.clone(),
             "ENCRYPT".into(),
             record.record_id.clone(),
-        ).with_patient_id(record.patient_id.clone());
-        
-        let _ = self.audit_logger.log(audit_entry, &key.dilithium_sk.bytes)?;
-        
+        )
+        .with_patient_id(record.patient_id.clone());
+
+        let _ = self
+            .audit_logger
+            .log(audit_entry, &key.dilithium_sk.bytes)?;
+
         Ok(encrypted)
     }
 
@@ -674,7 +714,10 @@ fn create_test_record() -> MedicalRecord {
             phone_numbers: vec!["617-555-0123".into()],
             email_addresses: vec!["john.smith@email.com".into()],
         },
-        created_at: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+        created_at: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
         created_by: "nurse.smith@hospital.org".into(),
     }
 }
@@ -688,24 +731,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("SIRRAYA MEDICAL COMPLIANCE ENGINE");
     println!("Enterprise Healthcare Cryptographic Compliance Platform");
     println!("{}", "=".repeat(60));
-    
+
     let engine = MedicalComplianceEngine::new()?;
-    
+
     let test_record = create_test_record();
     println!("\nProcessing record: {}", test_record.record_id);
-    
+
     let encrypted = engine.process_record(test_record)?;
     println!("  Encrypted: {} bytes", encrypted.encrypted_payload.len());
     println!("  Key version: {}", encrypted.key_version);
     println!("  Signature: {} bytes", encrypted.signature.bytes.len());
-    
+
     let metrics = engine.get_metrics();
     println!("\nSystem Metrics:");
     println!("  Records processed: {}", metrics["records_processed"]);
-    
+
     println!("\n{}", "=".repeat(60));
     println!("Medical Compliance Engine operational");
     println!("{}", "=".repeat(60));
-    
+
     Ok(())
 }

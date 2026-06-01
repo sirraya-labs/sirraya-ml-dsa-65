@@ -5,14 +5,17 @@
 // SIRRAYA LABS - Cryptographic Systems Division
 // Educational Credential Issuance System
 
-use ml_dsa_65::{MlDsa65, PUBLICKEYBYTES, SIGNBYTES, SECRETKEYBYTES};
-use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use sha3::{Shake256, digest::{Update, ExtendableOutput, XofReader}};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+use chrono::DateTime;
+use chrono::Utc;
+use ml_dsa_65::{MlDsa65, PUBLICKEYBYTES, SECRETKEYBYTES, SIGNBYTES};
 use serde_json::{json, Value};
+use sha3::{
+    digest::{ExtendableOutput, Update, XofReader},
+    Shake256,
+};
 use std::fs;
 use std::time::SystemTime;
-use chrono::Utc;
-use chrono::DateTime;
 
 // ============================================================================
 // Constants
@@ -29,46 +32,49 @@ const MULTICODEC_MLDSA65: u16 = 0x1305;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("SIRRAYA LABS - Educational Credential Issuance System");
     println!("ML-DSA-65 W3C Verifiable Credential Generator\n");
-    
+
     // Generate issuer keypair
     println!("[1/6] Generating ML-DSA-65 keypair for issuer...");
     let (issuer_public_key, issuer_secret_key) = MlDsa65::keypair()?;
     println!("  ✓ Keypair generated successfully");
-    
+
     // Create issuer DID
     println!("\n[2/6] Creating issuer DID...");
     let issuer_did = create_did_key(&issuer_public_key);
     println!("  ✓ Issuer DID: {}", truncate_did(&issuer_did));
-    
+
     // Save issuer keys securely
     println!("\n[3/6] Securing issuer keys...");
     save_issuer_keys(&issuer_public_key, &issuer_secret_key, &issuer_did)?;
     println!("  ✓ Keys saved to issuer_keys/ directory");
-    
+
     // Create the degree credential
     println!("\n[4/6] Constructing degree credential...");
     let credential = create_degree_credential(&issuer_did);
     println!("  ✓ Credential structure created");
-    
+
     // Display credential summary
     display_credential_summary(&credential);
-    
+
     // Sign the credential
     println!("\n[5/6] Applying ML-DSA-65 cryptographic signature...");
     let signed_credential = sign_credential(credential, &issuer_secret_key, &issuer_did)?;
     println!("  ✓ Credential signed successfully");
-    
+
     // Save the signed credential
     println!("\n[6/6] Exporting signed credential...");
     save_credential(&signed_credential)?;
     println!("  ✓ Credential saved as degree_bs_computer_science.json");
-    
+
     // Generate verification summary
     let separator = "=".repeat(60);
     println!("\n{}", separator);
     println!("CREDENTIAL ISSUANCE COMPLETE");
     println!("{}", separator);
-    println!("Credential ID:   {}", signed_credential["id"].as_str().unwrap());
+    println!(
+        "Credential ID:   {}",
+        signed_credential["id"].as_str().unwrap()
+    );
     println!("Holder:          Amir Hameed Mir");
     println!("Degree:          Bachelor of Science in Computer Science");
     println!("Issuer:          University of Kashmir");
@@ -76,7 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Cryptosuite:     mldsa65-jcs-2024");
     println!("Verification:    Ready for W3C-compliant verification");
     println!("{}", separator);
-    
+
     Ok(())
 }
 
@@ -92,18 +98,18 @@ fn create_did_key(public_key: &[u8]) -> String {
     let mut combined = Vec::with_capacity(2 + public_key.len());
     combined.extend_from_slice(&multicodec_bytes);
     combined.extend_from_slice(public_key);
-    
+
     // Encode with Base58BTC
     let encoded = bs58::encode(combined)
         .with_alphabet(bs58::Alphabet::BITCOIN)
         .into_string();
-    
+
     format!("did:key:z{}", encoded)
 }
 
 fn truncate_did(did: &str) -> String {
     if did.len() > 60 {
-        format!("{}...{}", &did[..30], &did[did.len()-30..])
+        format!("{}...{}", &did[..30], &did[did.len() - 30..])
     } else {
         did.to_string()
     }
@@ -116,14 +122,15 @@ fn truncate_did(did: &str) -> String {
 /// Creates a comprehensive BS Computer Science degree credential
 fn create_degree_credential(issuer_did: &str) -> Value {
     let issuance_date = "2019-07-15T00:00:00Z";
-    let credential_id = format!("urn:uuid:degree-{}-{}", 
+    let credential_id = format!(
+        "urn:uuid:degree-{}-{}",
         "bs-cs-2019",
         SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_secs()
     );
-    
+
     json!({
         "@context": [
             "https://www.w3.org/ns/credentials/v2",
@@ -310,25 +317,39 @@ fn create_degree_credential(issuer_did: &str) -> Value {
 
 fn display_credential_summary(credential: &Value) {
     let subject = &credential["credentialSubject"];
-    
+
     println!("\n  Credential Summary:");
     println!("  +-------------------------------------------------------------");
-    println!("  | Student:     {} ({})", 
+    println!(
+        "  | Student:     {} ({})",
         subject["name"]["fullName"].as_str().unwrap_or(""),
-        subject["identifier"][0]["value"].as_str().unwrap_or(""));
-    println!("  | Degree:      {} in {}", 
+        subject["identifier"][0]["value"].as_str().unwrap_or("")
+    );
+    println!(
+        "  | Degree:      {} in {}",
         subject["degreeType"]["name"].as_str().unwrap_or(""),
-        subject["major"]["name"].as_str().unwrap_or(""));
+        subject["major"]["name"].as_str().unwrap_or("")
+    );
     println!("  | Institution: University of Kashmir");
-    println!("  | Department:  {}", subject["alumniOf"]["department"].as_str().unwrap_or(""));
-    println!("  | Graduation:  {} (Class of {})", 
+    println!(
+        "  | Department:  {}",
+        subject["alumniOf"]["department"].as_str().unwrap_or("")
+    );
+    println!(
+        "  | Graduation:  {} (Class of {})",
         subject["awardDate"].as_str().unwrap_or(""),
-        subject["graduationYear"].as_u64().unwrap_or(0));
-    println!("  | CGPA:        {}/{} - {}", 
+        subject["graduationYear"].as_u64().unwrap_or(0)
+    );
+    println!(
+        "  | CGPA:        {}/{} - {}",
         subject["gpa"]["value"].as_f64().unwrap_or(0.0),
         subject["gpa"]["scale"].as_f64().unwrap_or(0.0),
-        subject["academicStanding"].as_str().unwrap_or(""));
-    println!("  | Honors:      {} award(s)", subject["honors"].as_array().unwrap_or(&vec![]).len());
+        subject["academicStanding"].as_str().unwrap_or("")
+    );
+    println!(
+        "  | Honors:      {} award(s)",
+        subject["honors"].as_array().unwrap_or(&vec![]).len()
+    );
     println!("  +-------------------------------------------------------------");
 }
 
@@ -344,7 +365,7 @@ fn sign_credential(
 ) -> Result<Value, Box<dyn std::error::Error>> {
     let now: DateTime<Utc> = Utc::now();
     let created = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
-    
+
     // Create proof configuration
     let proof_config = json!({
         "type": "DataIntegrityProof",
@@ -357,35 +378,36 @@ fn sign_credential(
             "https://www.w3.org/ns/credentials/undefined-terms/v2"
         ]
     });
-    
+
     // Create verification message
     let unsigned_credential = credential.clone();
-    
+
     let canonical_doc = jcs_canonicalize(&unsigned_credential);
     let canonical_config = jcs_canonicalize(&proof_config);
-    
+
     let mut hasher = Shake256::default();
     Update::update(&mut hasher, canonical_doc.as_bytes());
     Update::update(&mut hasher, canonical_config.as_bytes());
-    
+
     let mut verification_message = vec![0u8; 64];
     hasher.finalize_xof().read(&mut verification_message);
-    
+
     // Sign the message
     let signature = MlDsa65::sign(secret_key, &verification_message)?;
-    
+
     // Encode signature with multibase prefix
-    let encoded_signature = format!("{}{}", 
+    let encoded_signature = format!(
+        "{}{}",
         MULTIBASE_BASE64URL_PREFIX,
         URL_SAFE_NO_PAD.encode(&signature)
     );
-    
+
     // Add proof to credential
     let mut proof = proof_config;
     proof["proofValue"] = json!(encoded_signature);
-    
+
     credential["proof"] = proof;
-    
+
     Ok(credential)
 }
 
@@ -395,7 +417,8 @@ fn jcs_canonicalize(value: &Value) -> String {
         Value::Object(map) => {
             let mut sorted: Vec<(&String, &Value)> = map.iter().collect();
             sorted.sort_by(|a, b| a.0.cmp(b.0));
-            let items: Vec<String> = sorted.iter()
+            let items: Vec<String> = sorted
+                .iter()
                 .map(|(k, v)| format!("\"{}\":{}", k, jcs_canonicalize(v)))
                 .collect();
             format!("{{{}}}", items.join(","))
@@ -421,13 +444,13 @@ fn save_issuer_keys(
     issuer_did: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all("issuer_keys")?;
-    
+
     // Save public key
     fs::write("issuer_keys/public_key.bin", public_key)?;
-    
+
     // Save secret key (encrypted in production)
     fs::write("issuer_keys/secret_key.bin", secret_key)?;
-    
+
     // Save DID document
     let did_document = json!({
         "@context": [
@@ -445,12 +468,12 @@ fn save_issuer_keys(
         }],
         "assertionMethod": [format!("{}#{}", issuer_did, issuer_did)]
     });
-    
+
     fs::write(
         "issuer_keys/did.json",
-        serde_json::to_string_pretty(&did_document)?
+        serde_json::to_string_pretty(&did_document)?,
     )?;
-    
+
     // Save issuer info
     let issuer_info = json!({
         "did": issuer_did,
@@ -460,12 +483,12 @@ fn save_issuer_keys(
         "cryptosuite": "mldsa65-jcs-2024",
         "security_note": "Secret key must be stored in HSM in production"
     });
-    
+
     fs::write(
         "issuer_keys/issuer_info.json",
-        serde_json::to_string_pretty(&issuer_info)?
+        serde_json::to_string_pretty(&issuer_info)?,
     )?;
-    
+
     Ok(())
 }
 
@@ -473,10 +496,10 @@ fn save_credential(credential: &Value) -> Result<(), Box<dyn std::error::Error>>
     // Save as formatted JSON
     let formatted = serde_json::to_string_pretty(credential)?;
     fs::write("degree_bs_computer_science.json", &formatted)?;
-    
+
     // Also save a minified version
     let minified = serde_json::to_string(credential)?;
     fs::write("degree_bs_computer_science.min.json", minified)?;
-    
+
     Ok(())
 }

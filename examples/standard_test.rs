@@ -12,7 +12,7 @@ fn main() {
     // Generate keypair
     println!("1. Generating keypair...");
     let keypair_result = Dilithium5::keypair();
-    
+
     let (pk, sk) = match keypair_result {
         Ok(kp) => kp,
         Err(e) => {
@@ -27,7 +27,7 @@ fn main() {
     println!("2. Signing...");
     let msg = b"Standard signature test message";
     let sig_result = Dilithium5::sign(&sk, msg);
-    
+
     let sig = match sig_result {
         Ok(s) => s,
         Err(e) => {
@@ -41,10 +41,13 @@ fn main() {
     // Verify
     println!("3. Verifying...");
     let valid_result = Dilithium5::verify(&pk, msg, &sig);
-    
+
     match valid_result {
         Ok(valid) => {
-            println!("   ✓ Verification: {}\n", if valid { "VALID ✓" } else { "INVALID ✗" });
+            println!(
+                "   ✓ Verification: {}\n",
+                if valid { "VALID ✓" } else { "INVALID ✗" }
+            );
         }
         Err(e) => {
             println!("   ✗ Verification error: {}\n", e);

@@ -22,7 +22,7 @@
 //
 // =============================================================================
 
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
@@ -39,7 +39,7 @@ pub enum Term {
     Blank(String),
     /// `"value"`, `"value"^^<dt>`, or `"value"@lang`
     Literal {
-        value:    String,
+        value: String,
         datatype: Option<String>,
         language: Option<String>,
     },
@@ -53,17 +53,25 @@ impl Term {
     }
 
     pub fn blank_id(&self) -> Option<&str> {
-        if let Term::Blank(id) = self { Some(id) } else { None }
+        if let Term::Blank(id) = self {
+            Some(id)
+        } else {
+            None
+        }
     }
 
     /// Return the canonical N-Quads serialisation of this term (no trailing
     /// space — callers add spacing).
     pub fn to_nquads(&self) -> String {
         match self {
-            Term::Iri(iri)   => format!("<{}>", iri),
-            Term::Blank(id)  => format!("_:{}", id),
+            Term::Iri(iri) => format!("<{}>", iri),
+            Term::Blank(id) => format!("_:{}", id),
             Term::DefaultGraph => String::new(),
-            Term::Literal { value, datatype, language } => {
+            Term::Literal {
+                value,
+                datatype,
+                language,
+            } => {
                 let escaped = escape_string(value);
                 if let Some(lang) = language {
                     format!("\"{}\"@{}", escaped, lang)
@@ -90,10 +98,10 @@ impl fmt::Display for Term {
 /// One RDF quad: subject predicate object graphname.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Quad {
-    pub subject:    Term,
-    pub predicate:  Term,
-    pub object:     Term,
-    pub graph_name: Term,   // Term::DefaultGraph when in the default graph
+    pub subject: Term,
+    pub predicate: Term,
+    pub object: Term,
+    pub graph_name: Term, // Term::DefaultGraph when in the default graph
 }
 
 impl Quad {
@@ -101,7 +109,7 @@ impl Quad {
     pub fn to_nquads(&self) -> String {
         let g = match &self.graph_name {
             Term::DefaultGraph => String::new(),
-            other              => format!(" {}", other.to_nquads()),
+            other => format!(" {}", other.to_nquads()),
         };
         format!(
             "{} {} {}{}.\n",
@@ -114,7 +122,8 @@ impl Quad {
 
     /// Return a copy with every blank node replaced using `replacer`.
     pub fn replace_blanks<F>(&self, mut replacer: F) -> Quad
-    where F: FnMut(&str) -> String
+    where
+        F: FnMut(&str) -> String,
     {
         // FIXED: Added `mut` here
         let mut replace = |t: &Term| -> Term {
@@ -125,15 +134,13 @@ impl Quad {
             }
         };
         Quad {
-            subject:    replace(&self.subject),
-            predicate:  replace(&self.predicate),
-            object:     replace(&self.object),
+            subject: replace(&self.subject),
+            predicate: replace(&self.predicate),
+            object: replace(&self.object),
             graph_name: replace(&self.graph_name),
         }
     }
 }
-
-
 
 // =============================================================================
 // § B.  N-Quads Parser
@@ -150,7 +157,7 @@ pub fn parse_nquads(input: &str) -> Result<Vec<Quad>, String> {
             continue;
         }
         match parse_quad_line(line) {
-            Ok(q)  => quads.push(q),
+            Ok(q) => quads.push(q),
             Err(e) => return Err(format!("Line {}: {} — {:?}", lineno + 1, e, line)),
         }
     }
@@ -160,11 +167,11 @@ pub fn parse_nquads(input: &str) -> Result<Vec<Quad>, String> {
 fn parse_quad_line(line: &str) -> Result<Quad, String> {
     let mut cursor = line;
 
-    let subject   = parse_term(&mut cursor, false)?;
+    let subject = parse_term(&mut cursor, false)?;
     skip_ws(&mut cursor);
     let predicate = parse_term(&mut cursor, false)?;
     skip_ws(&mut cursor);
-    let object    = parse_term(&mut cursor, false)?;
+    let object = parse_term(&mut cursor, false)?;
     skip_ws(&mut cursor);
 
     // Optional graph name before the terminating dot
@@ -182,7 +189,12 @@ fn parse_quad_line(line: &str) -> Result<Quad, String> {
         return Err(format!("Expected '.' but found {:?}", cursor));
     }
 
-    Ok(Quad { subject, predicate, object, graph_name })
+    Ok(Quad {
+        subject,
+        predicate,
+        object,
+        graph_name,
+    })
 }
 
 fn skip_ws(cursor: &mut &str) {
@@ -192,7 +204,9 @@ fn skip_ws(cursor: &mut &str) {
 fn parse_term<'a>(cursor: &mut &'a str, allow_default: bool) -> Result<Term, String> {
     skip_ws(cursor);
     if cursor.is_empty() {
-        if allow_default { return Ok(Term::DefaultGraph); }
+        if allow_default {
+            return Ok(Term::DefaultGraph);
+        }
         return Err("Unexpected end of line".into());
     }
     let first = cursor.chars().next().unwrap();
@@ -210,7 +224,8 @@ fn parse_term<'a>(cursor: &mut &'a str, allow_default: bool) -> Result<Term, Str
                 return Err("Expected '_:' for blank node".into());
             }
             let rest = &cursor[2..];
-            let end = rest.find(|c: char| c.is_ascii_whitespace() || c == '.' || c == ',')
+            let end = rest
+                .find(|c: char| c.is_ascii_whitespace() || c == '.' || c == ',')
                 .unwrap_or(rest.len());
             let label = rest[..end].to_string();
             *cursor = &cursor[2 + end..];
@@ -240,31 +255,39 @@ fn parse_literal(cursor: &mut &str) -> Result<Term, String> {
             Some((_, '\\')) => {
                 match chars.next() {
                     None => return Err("Trailing backslash in literal".into()),
-                    Some((_, 'n'))  => value.push('\n'),
-                    Some((_, 'r'))  => value.push('\r'),
-                    Some((_, 't'))  => value.push('\t'),
-                    Some((_, '"'))  => value.push('"'),
+                    Some((_, 'n')) => value.push('\n'),
+                    Some((_, 'r')) => value.push('\r'),
+                    Some((_, 't')) => value.push('\t'),
+                    Some((_, '"')) => value.push('"'),
                     Some((_, '\\')) => value.push('\\'),
-                    Some((_, 'u'))  => {
+                    Some((_, 'u')) => {
                         // \uXXXX
-                        let hex4: String = (0..4).map(|_| chars.next()
-                            .map(|(_, c)| c).unwrap_or('?')).collect();
+                        let hex4: String = (0..4)
+                            .map(|_| chars.next().map(|(_, c)| c).unwrap_or('?'))
+                            .collect();
                         let cp = u32::from_str_radix(&hex4, 16)
                             .map_err(|_| format!("Bad \\u escape: {}", hex4))?;
                         value.push(char::from_u32(cp).unwrap_or('\u{FFFD}'));
                     }
-                    Some((_, 'U'))  => {
+                    Some((_, 'U')) => {
                         // \UXXXXXXXX
-                        let hex8: String = (0..8).map(|_| chars.next()
-                            .map(|(_, c)| c).unwrap_or('?')).collect();
+                        let hex8: String = (0..8)
+                            .map(|_| chars.next().map(|(_, c)| c).unwrap_or('?'))
+                            .collect();
                         let cp = u32::from_str_radix(&hex8, 16)
                             .map_err(|_| format!("Bad \\U escape: {}", hex8))?;
                         value.push(char::from_u32(cp).unwrap_or('\u{FFFD}'));
                     }
-                    Some((_, c)) => { value.push('\\'); value.push(c); }
+                    Some((_, c)) => {
+                        value.push('\\');
+                        value.push(c);
+                    }
                 }
             }
-            Some((i, '"')) => { close_byte = i; break; }
+            Some((i, '"')) => {
+                close_byte = i;
+                break;
+            }
             Some((_, c)) => value.push(c),
         }
     }
@@ -276,20 +299,33 @@ fn parse_literal(cursor: &mut &str) -> Result<Term, String> {
     if cursor.starts_with("^^") {
         *cursor = &cursor[2..];
         if let Ok(Term::Iri(dt)) = parse_term(cursor, false) {
-            return Ok(Term::Literal { value, datatype: Some(dt), language: None });
+            return Ok(Term::Literal {
+                value,
+                datatype: Some(dt),
+                language: None,
+            });
         }
         return Err("Expected IRI after ^^".into());
     }
     if cursor.starts_with('@') {
         *cursor = &cursor[1..];
-        let end = cursor.find(|c: char| c.is_ascii_whitespace() || c == '.' || c == ',')
+        let end = cursor
+            .find(|c: char| c.is_ascii_whitespace() || c == '.' || c == ',')
             .unwrap_or(cursor.len());
         let lang = cursor[..end].to_string();
         *cursor = &cursor[end..];
-        return Ok(Term::Literal { value, datatype: None, language: Some(lang) });
+        return Ok(Term::Literal {
+            value,
+            datatype: None,
+            language: Some(lang),
+        });
     }
 
-    Ok(Term::Literal { value, datatype: None, language: None })
+    Ok(Term::Literal {
+        value,
+        datatype: None,
+        language: None,
+    })
 }
 
 /// Escape a string value for N-Quads output (spec §A canonical form).
@@ -303,8 +339,8 @@ fn escape_string(s: &str) -> String {
             '\x0B' => out.push_str("\\u000B"),
             '\x0C' => out.push_str("\\f"),
             '\x0D' => out.push_str("\\r"),
-            '"'    => out.push_str("\\\""),
-            '\\'   => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
             '\x7F' => out.push_str("\\u007F"),
             c if (c as u32) < 0x20 => {
                 out.push_str(&format!("\\u{:04X}", c as u32));
@@ -322,21 +358,21 @@ fn escape_string(s: &str) -> String {
 #[derive(Debug, Clone)]
 pub struct IdentifierIssuer {
     /// e.g. "c14n" or "b"
-    pub prefix:   String,
-    pub counter:  u64,
+    pub prefix: String,
+    pub counter: u64,
     /// Maps original blank-node id → issued id (ordered for determinism)
-    pub issued:   BTreeMap<String, String>,
+    pub issued: BTreeMap<String, String>,
     /// Maintains insertion order so we can replay issuance order
-    pub order:    Vec<String>,
+    pub order: Vec<String>,
 }
 
 impl IdentifierIssuer {
     pub fn new(prefix: &str) -> Self {
         Self {
-            prefix:  prefix.to_string(),
+            prefix: prefix.to_string(),
             counter: 0,
-            issued:  BTreeMap::new(),
-            order:   Vec::new(),
+            issued: BTreeMap::new(),
+            order: Vec::new(),
         }
     }
 
@@ -378,22 +414,26 @@ fn sha256_hex(data: &[u8]) -> String {
 // Produces a hash that encodes which quads mention blank node `id`,
 // using `_:a` where the blank node itself appears and `_:z` for other blanks.
 
-fn hash_first_degree_quads(
-    id: &str,
-    bn_to_quads: &HashMap<String, Vec<Quad>>,
-) -> String {
+fn hash_first_degree_quads(id: &str, bn_to_quads: &HashMap<String, Vec<Quad>>) -> String {
     let quads = match bn_to_quads.get(id) {
         Some(q) => q,
-        None    => return sha256_hex(b""),
+        None => return sha256_hex(b""),
     };
 
-    let mut nquads: Vec<String> = quads.iter().map(|q| {
-        // Replace blank nodes: `id` → `_:a`, others → `_:z`
-        let serialized = q.replace_blanks(|bn| {
-            if bn == id { "a".to_string() } else { "z".to_string() }
-        });
-        serialized.to_nquads()
-    }).collect();
+    let mut nquads: Vec<String> = quads
+        .iter()
+        .map(|q| {
+            // Replace blank nodes: `id` → `_:a`, others → `_:z`
+            let serialized = q.replace_blanks(|bn| {
+                if bn == id {
+                    "a".to_string()
+                } else {
+                    "z".to_string()
+                }
+            });
+            serialized.to_nquads()
+        })
+        .collect();
 
     // Sort in Unicode code point order (spec §4.6.3 step 3)
     nquads.sort();
@@ -409,11 +449,11 @@ fn hash_first_degree_quads(
 // blank node `id` inside quad `q`, using `position` ("s", "p", or "o" / "g").
 
 fn hash_related_blank_node(
-    related:    &str,
-    quad:       &Quad,
-    issuer:     &IdentifierIssuer,    // canonical issuer
-    tmp_issuer: &IdentifierIssuer,    // temporary issuer
-    position:   &str,                  // "s", "p", "o", or "g"
+    related: &str,
+    quad: &Quad,
+    issuer: &IdentifierIssuer,     // canonical issuer
+    tmp_issuer: &IdentifierIssuer, // temporary issuer
+    position: &str,                // "s", "p", "o", or "g"
 ) -> String {
     // Determine the identifier to use for `related`
     let chosen_id = if let Some(c) = issuer.get(related) {
@@ -453,10 +493,10 @@ fn hash_related_blank_node(
 // Returns: (hash_string, temporary_issuer_after_algorithm)
 
 fn hash_n_degree_quads(
-    id:           &str,
+    id: &str,
     canon_issuer: &IdentifierIssuer,
-    tmp_issuer:   &mut IdentifierIssuer,
-    bn_to_quads:  &HashMap<String, Vec<Quad>>,
+    tmp_issuer: &mut IdentifierIssuer,
+    bn_to_quads: &HashMap<String, Vec<Quad>>,
 ) -> (String, IdentifierIssuer) {
     // Rn_to_hash: maps a related blank node id to its hash_related string
     // (grouping multiple relations from different quads together into one string
@@ -470,7 +510,7 @@ fn hash_n_degree_quads(
 
     let quads = match bn_to_quads.get(id) {
         Some(q) => q.clone(),
-        None    => return (sha256_hex(b""), tmp_issuer.clone()),
+        None => return (sha256_hex(b""), tmp_issuer.clone()),
     };
 
     // Step 1 — for every quad mentioning `id`, hash all other blank nodes in
@@ -478,13 +518,15 @@ fn hash_n_degree_quads(
     for quad in &quads {
         // Check each component position
         let components: &[(&Term, &str)] = &[
-            (&quad.subject,    "s"),
-            (&quad.object,     "o"),
+            (&quad.subject, "s"),
+            (&quad.object, "o"),
             (&quad.graph_name, "g"),
         ];
         for (term, pos) in components {
             if let Term::Blank(related) = term {
-                if related.as_str() == id { continue; }
+                if related.as_str() == id {
+                    continue;
+                }
 
                 // Determine the "related hash"
                 let related_hash = if let Some(c_id) = canon_issuer.get(related) {
@@ -500,7 +542,7 @@ fn hash_n_degree_quads(
                 // Build the hash-related-blank-node input string  (§4.7.3):
                 //   input  =  position  +  predicate_serialization  +  "_:" + chosen_id
                 let tmp_iso = tmp_issuer.clone();
-                let _ = tmp_iso;   // borrowck appeasement
+                let _ = tmp_iso; // borrowck appeasement
 
                 let chosen_label = if let Some(c_id) = canon_issuer.get(related) {
                     format!("_:{}", c_id)
@@ -510,12 +552,7 @@ fn hash_n_degree_quads(
                     format!("_:{}", related_hash) // fingerprint as label
                 };
 
-                let input_str = format!(
-                    "{}{}{}",
-                    pos,
-                    quad.predicate.to_nquads(),
-                    chosen_label,
-                );
+                let input_str = format!("{}{}{}", pos, quad.predicate.to_nquads(), chosen_label,);
                 let h = sha256_hex(input_str.as_bytes());
                 hash_to_related.entry(h).or_default().push(related.clone());
             }
@@ -530,7 +567,7 @@ fn hash_n_degree_quads(
     for (rel_hash, bnode_list) in &hash_to_related {
         data_to_hash.push_str(rel_hash);
 
-        let mut chosen_path    = String::new();
+        let mut chosen_path = String::new();
         let mut chosen_issuer: Option<IdentifierIssuer> = None;
 
         // Try every permutation of bnode_list — pick the lexicographically
@@ -540,7 +577,7 @@ fn hash_n_degree_quads(
         let perms = permutations(bnode_list);
         for perm in perms {
             let mut issuer_copy = tmp_issuer.clone();
-            let mut path        = String::new();
+            let mut path = String::new();
             let mut recursion_list: Vec<String> = Vec::new();
 
             for related in &perm {
@@ -562,12 +599,8 @@ fn hash_n_degree_quads(
             // Recurse into each node that was newly assigned a temporary id
             let mut skip = false;
             for related in &recursion_list {
-                let (result_hash, result_issuer) = hash_n_degree_quads(
-                    related,
-                    canon_issuer,
-                    &mut issuer_copy,
-                    bn_to_quads,
-                );
+                let (result_hash, result_issuer) =
+                    hash_n_degree_quads(related, canon_issuer, &mut issuer_copy, bn_to_quads);
                 path.push_str(&format!("<{}>", result_hash));
                 issuer_copy = result_issuer;
 
@@ -577,10 +610,12 @@ fn hash_n_degree_quads(
                 }
             }
 
-            if skip { continue; }
+            if skip {
+                continue;
+            }
 
             if chosen_path.is_empty() || path < chosen_path {
-                chosen_path   = path;
+                chosen_path = path;
                 chosen_issuer = Some(issuer_copy);
             }
         }
@@ -596,8 +631,12 @@ fn hash_n_degree_quads(
 
 /// Generate all permutations of a slice.
 fn permutations<T: Clone>(items: &[T]) -> Vec<Vec<T>> {
-    if items.is_empty() { return vec![vec![]]; }
-    if items.len() == 1 { return vec![items.to_vec()]; }
+    if items.is_empty() {
+        return vec![vec![]];
+    }
+    if items.len() == 1 {
+        return vec![items.to_vec()];
+    }
     let mut result = Vec::new();
     for i in 0..items.len() {
         let mut rest = items.to_vec();
@@ -621,7 +660,12 @@ pub fn canonicalize(quads: &[Quad]) -> String {
 
     // ── Step 2: build blank-node-to-quads map ────────────────────────────────
     for quad in quads {
-        for term in [&quad.subject, &quad.predicate, &quad.object, &quad.graph_name] {
+        for term in [
+            &quad.subject,
+            &quad.predicate,
+            &quad.object,
+            &quad.graph_name,
+        ] {
             if let Term::Blank(id) = term {
                 bn_to_quads
                     .entry(id.clone())
@@ -658,17 +702,15 @@ pub fn canonicalize(quads: &[Quad]) -> String {
         let mut hash_path_list: Vec<(String, IdentifierIssuer)> = Vec::new();
 
         for bn in id_list {
-            if canon_issuer.has_issued(bn) { continue; }
+            if canon_issuer.has_issued(bn) {
+                continue;
+            }
 
             let mut tmp_issuer = IdentifierIssuer::new("b");
-            tmp_issuer.issue(bn);   // Step 5.2.3: issue temporary id for `bn`
+            tmp_issuer.issue(bn); // Step 5.2.3: issue temporary id for `bn`
 
-            let (nd_hash, result_issuer) = hash_n_degree_quads(
-                bn,
-                &canon_issuer,
-                &mut tmp_issuer,
-                &bn_to_quads,
-            );
+            let (nd_hash, result_issuer) =
+                hash_n_degree_quads(bn, &canon_issuer, &mut tmp_issuer, &bn_to_quads);
 
             hash_path_list.push((nd_hash, result_issuer));
         }
@@ -685,16 +727,20 @@ pub fn canonicalize(quads: &[Quad]) -> String {
     }
 
     // ── Step 6/7: emit the serialized canonical N-Quads ──────────────────────
-    let mut canonical_quads: Vec<String> = quads.iter().map(|q| {
-        let canonicalized = q.replace_blanks(|bn| {
-            canon_issuer.get(bn)
-                .map(|c| c.to_string())
-                .unwrap_or_else(|| format!("MISSING_{}", bn))
-        });
-        canonicalized.to_nquads()
-    }).collect();
+    let mut canonical_quads: Vec<String> = quads
+        .iter()
+        .map(|q| {
+            let canonicalized = q.replace_blanks(|bn| {
+                canon_issuer
+                    .get(bn)
+                    .map(|c| c.to_string())
+                    .unwrap_or_else(|| format!("MISSING_{}", bn))
+            });
+            canonicalized.to_nquads()
+        })
+        .collect();
 
-    canonical_quads.sort();      // Unicode code point order (spec §4.4.3 step 7)
+    canonical_quads.sort(); // Unicode code point order (spec §4.4.3 step 7)
     canonical_quads.concat()
 }
 
@@ -738,7 +784,11 @@ fn main() {
     let canonical = canonicalize(&quads);
     let elapsed = start.elapsed();
 
-    println!("  Canonical  : {} quad(s) in {}ms\n", canonical.lines().count(), elapsed.as_millis());
+    println!(
+        "  Canonical  : {} quad(s) in {}ms\n",
+        canonical.lines().count(),
+        elapsed.as_millis()
+    );
     println!("━━━ Canonical N-Quads ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     print!("{}", canonical);
     println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
@@ -841,15 +891,19 @@ _:b1 <http://a.example/r> <http://a.example/o> .
     for (name, input, expected) in tests {
         print!("  Test: {:45}", name);
         let quads = match parse_nquads(input) {
-            Ok(q)  => q,
-            Err(e) => { println!("✗ PARSE ERROR: {}", e); failed += 1; continue; }
+            Ok(q) => q,
+            Err(e) => {
+                println!("✗ PARSE ERROR: {}", e);
+                failed += 1;
+                continue;
+            }
         };
         let got = canonicalize(&quads);
 
         // If expected is empty, check idempotency instead
         let ok = if expected.is_empty() {
             let quads2 = parse_nquads(&got).unwrap();
-            let got2   = canonicalize(&quads2);
+            let got2 = canonicalize(&quads2);
             got == got2
         } else {
             &got == expected
@@ -860,8 +914,21 @@ _:b1 <http://a.example/r> <http://a.example/o> .
             passed += 1;
         } else {
             println!("❌ FAIL");
-            println!("     Expected:\n{}", expected.lines().map(|l| format!("       {}", l)).collect::<Vec<_>>().join("\n"));
-            println!("     Got:\n{}", got.lines().map(|l| format!("       {}", l)).collect::<Vec<_>>().join("\n"));
+            println!(
+                "     Expected:\n{}",
+                expected
+                    .lines()
+                    .map(|l| format!("       {}", l))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
+            println!(
+                "     Got:\n{}",
+                got.lines()
+                    .map(|l| format!("       {}", l))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
             failed += 1;
         }
     }
@@ -898,9 +965,9 @@ mod tests {
         let q = parse_nquads("<http://a.example/s> <http://a.example/p> <http://a.example/o> .\n")
             .unwrap();
         assert_eq!(q.len(), 1);
-        assert_eq!(q[0].subject,   Term::Iri("http://a.example/s".into()));
+        assert_eq!(q[0].subject, Term::Iri("http://a.example/s".into()));
         assert_eq!(q[0].predicate, Term::Iri("http://a.example/p".into()));
-        assert_eq!(q[0].object,    Term::Iri("http://a.example/o".into()));
+        assert_eq!(q[0].object, Term::Iri("http://a.example/o".into()));
         assert_eq!(q[0].graph_name, Term::DefaultGraph);
     }
 
@@ -908,33 +975,53 @@ mod tests {
     fn test_parse_blank_nodes() {
         let q = parse_nquads("_:b0 <http://ex.org/p> _:b1 .\n").unwrap();
         assert_eq!(q[0].subject, Term::Blank("b0".into()));
-        assert_eq!(q[0].object,  Term::Blank("b1".into()));
+        assert_eq!(q[0].object, Term::Blank("b1".into()));
     }
 
     #[test]
     fn test_parse_typed_literal() {
         let q = parse_nquads(
-            "_:b0 <http://ex.org/p> \"hello\"^^<http://www.w3.org/2001/XMLSchema#string> .\n"
-        ).unwrap();
+            "_:b0 <http://ex.org/p> \"hello\"^^<http://www.w3.org/2001/XMLSchema#string> .\n",
+        )
+        .unwrap();
         assert!(matches!(&q[0].object, Term::Literal { value, datatype, .. }
             if value == "hello" && datatype.as_deref() == Some("http://www.w3.org/2001/XMLSchema#string")));
     }
 
     #[test]
     fn test_term_to_nquads() {
-        assert_eq!(Term::Iri("http://x.org/".into()).to_nquads(), "<http://x.org/>");
+        assert_eq!(
+            Term::Iri("http://x.org/".into()).to_nquads(),
+            "<http://x.org/>"
+        );
         assert_eq!(Term::Blank("b0".into()).to_nquads(), "_:b0");
-        assert_eq!(Term::Literal {
-            value: "hi".into(), datatype: None, language: None
-        }.to_nquads(), "\"hi\"");
-        assert_eq!(Term::Literal {
-            value: "hi".into(),
-            datatype: Some("http://www.w3.org/2001/XMLSchema#string".into()),
-            language: None,
-        }.to_nquads(), "\"hi\"");  // xsd:string elided
-        assert_eq!(Term::Literal {
-            value: "bonjour".into(), datatype: None, language: Some("fr".into()),
-        }.to_nquads(), "\"bonjour\"@fr");
+        assert_eq!(
+            Term::Literal {
+                value: "hi".into(),
+                datatype: None,
+                language: None
+            }
+            .to_nquads(),
+            "\"hi\""
+        );
+        assert_eq!(
+            Term::Literal {
+                value: "hi".into(),
+                datatype: Some("http://www.w3.org/2001/XMLSchema#string".into()),
+                language: None,
+            }
+            .to_nquads(),
+            "\"hi\""
+        ); // xsd:string elided
+        assert_eq!(
+            Term::Literal {
+                value: "bonjour".into(),
+                datatype: None,
+                language: Some("fr".into()),
+            }
+            .to_nquads(),
+            "\"bonjour\"@fr"
+        );
     }
 
     #[test]
@@ -950,7 +1037,7 @@ mod tests {
     #[test]
     fn test_canonicalize_no_blanks() {
         let input = "<http://s.example/> <http://p.example/> <http://o.example/> .\n";
-        let quads  = parse_nquads(input).unwrap();
+        let quads = parse_nquads(input).unwrap();
         let result = canonicalize(&quads);
         assert_eq!(result, input);
     }
@@ -967,7 +1054,7 @@ _:e1 <http://example.com/#t> <http://example.com/#u> .
 _:c14n0 <http://example.com/#s> <http://example.com/#u> .
 _:c14n1 <http://example.com/#t> <http://example.com/#u> .
 "#;
-        let quads  = parse_nquads(input).unwrap();
+        let quads = parse_nquads(input).unwrap();
         let result = canonicalize(&quads);
         assert_eq!(result, expected);
     }
@@ -978,10 +1065,10 @@ _:c14n1 <http://example.com/#t> <http://example.com/#u> .
 _:b <http://ex.org/q> _:c .
 _:c <http://ex.org/r> <http://ex.org/x> .
 "#;
-        let quads1  = parse_nquads(input).unwrap();
-        let pass1   = canonicalize(&quads1);
-        let quads2  = parse_nquads(&pass1).unwrap();
-        let pass2   = canonicalize(&quads2);
+        let quads1 = parse_nquads(input).unwrap();
+        let pass1 = canonicalize(&quads1);
+        let quads2 = parse_nquads(&pass1).unwrap();
+        let pass2 = canonicalize(&quads2);
         assert_eq!(pass1, pass2, "Canonicalization must be idempotent");
     }
 

@@ -397,8 +397,7 @@ fn verify_verifiable_credential(
         .strip_prefix('u')
         .ok_or("proofValue must begin with Multibase prefix 'u' (base64url-nopad)")?;
 
-    let signature_bytes =
-        base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(proof_b64)?;
+    let signature_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(proof_b64)?;
 
     if signature_bytes.len() != 3309 {
         return Err(format!(
@@ -553,7 +552,10 @@ fn print_key_export_formats(
 
     // ⑤ Hex — test vectors and debugging only
     println!("⑤ Hexadecimal  [test vectors and debugging only]");
-    println!("  Public key (first 32 bytes): {}", hex::encode(&raw_public_key[..32]));
+    println!(
+        "  Public key (first 32 bytes): {}",
+        hex::encode(&raw_public_key[..32])
+    );
     println!();
 
     Ok(())

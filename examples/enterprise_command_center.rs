@@ -18,7 +18,7 @@
 //! Dependencies (add to Cargo.toml):
 //!   [dependencies]
 //!   rayon = "1.8"
-//!   rustc_version_runtime = "0.2" 
+//!   rustc_version_runtime = "0.2"
 //!   csv = "1.3"
 //!   serde_json = "1.0"
 //!   serde = { version = "1.0", features = ["derive"] }
@@ -27,21 +27,20 @@
 
 #![allow(dead_code)]
 #![forbid(unsafe_code)]
-#![allow(missing_docs)]  // ← This allows missing documentation comments
+#![allow(missing_docs)] // ← This allows missing documentation comments
 #![deny(rust_2018_idioms)]
 
-
-use dilithium5::{Dilithium5, constants::*};
-use serde::{Serialize, Deserialize};
-use serde_json::{json, Value};
-use chrono::{Utc, Duration as ChronoDuration};
-use std::collections::{HashMap, BTreeMap};
-use std::time::{SystemTime, UNIX_EPOCH, Instant};
-use std::fs::{self};
-use std::path::{PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
-use rayon::prelude::*;
+use chrono::{Duration as ChronoDuration, Utc};
 use csv::WriterBuilder;
+use dilithium5::{constants::*, Dilithium5};
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
+use std::collections::{BTreeMap, HashMap};
+use std::fs::{self};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 // ============================================================================
 // CONSTANTS & STATICS
@@ -423,7 +422,7 @@ pub struct RollbackVerification {
 // ============================================================================
 
 /// Sirraya One Enterprise Command Center
-/// 
+///
 /// Provides comprehensive PQC migration toolkit including:
 /// - Compliance reporting
 /// - Performance benchmarking  
@@ -442,8 +441,11 @@ impl EnterpriseCommandCenter {
     pub fn new(organization: &str, environment: &str) -> Self {
         let sanitized_org = organization.to_lowercase().replace(' ', "_");
         let sanitized_env = environment.to_lowercase();
-        let output_dir = PathBuf::from(format!("{}_{}_{}", OUTPUT_BASE, sanitized_org, sanitized_env));
-        
+        let output_dir = PathBuf::from(format!(
+            "{}_{}_{}",
+            OUTPUT_BASE, sanitized_org, sanitized_env
+        ));
+
         Self {
             organization: organization.to_string(),
             environment: environment.to_string(),
@@ -451,33 +453,40 @@ impl EnterpriseCommandCenter {
             benchmark_baseline: None,
         }
     }
-    
+
     // ========================================================================
     // COMPLIANCE REPORTING ENGINE
     // ========================================================================
-    
+
     /// Generate comprehensive enterprise compliance report
-    pub fn generate_compliance_report(&self) -> Result<ComplianceReport, Box<dyn std::error::Error>> {
+    pub fn generate_compliance_report(
+        &self,
+    ) -> Result<ComplianceReport, Box<dyn std::error::Error>> {
         println!("\nSIRRAYA ONE COMPLIANCE REPORT ENGINE");
         println!("  Organization: {}", self.organization);
         println!("  Environment: {}", self.environment);
-        println!("  {} Starting assessment", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"));
-        
+        println!(
+            "  {} Starting assessment",
+            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S")
+        );
+
         fs::create_dir_all(self.output_dir.join("compliance"))?;
-        
+
         let now = SystemTime::now();
         let timestamp = now.duration_since(UNIX_EPOCH)?.as_secs();
         let iso_now = Utc::now().to_rfc3339();
         let counter = REPORT_COUNTER.fetch_add(1, Ordering::SeqCst);
-        
+
         let inventory = self.discover_cryptographic_inventory()?;
         let readiness_score = self.calculate_readiness_score(&inventory);
         let risk_assessment = self.assess_risks(&inventory)?;
         let remediation_plan = self.generate_remediation_plan(&inventory, &risk_assessment)?;
-        let executive_summary = self.create_executive_summary(&inventory, &risk_assessment, &remediation_plan)?;
-        
+        let executive_summary =
+            self.create_executive_summary(&inventory, &risk_assessment, &remediation_plan)?;
+
         let report = ComplianceReport {
-            report_id: format!("SIRRAYA-COMPLIANCE-{}-{:06}", 
+            report_id: format!(
+                "SIRRAYA-COMPLIANCE-{}-{:06}",
                 self.organization.to_uppercase().replace(' ', ""),
                 counter
             ),
@@ -493,22 +502,22 @@ impl EnterpriseCommandCenter {
             remediation_plan,
             executive_summary,
         };
-        
+
         // Save artifacts
         self.save_compliance_artifacts(&report, timestamp)?;
-        
+
         println!("  \u{2713} Compliance assessment complete");
         println!("  \u{2713} Readiness score: {}/100", readiness_score);
         println!("  \u{2713} Report ID: {}", report.report_id);
-        
+
         Ok(report)
     }
-    
+
     /// Generate framework compliance status
     fn generate_framework_status(&self) -> Vec<ComplianceFramework> {
         let now = Utc::now();
         let iso_now = now.to_rfc3339();
-        
+
         vec![
             ComplianceFramework {
                 name: "NIST FIPS 203".into(),
@@ -544,11 +553,13 @@ impl EnterpriseCommandCenter {
             },
         ]
     }
-    
+
     /// Discover cryptographic inventory (simulated)
-    fn discover_cryptographic_inventory(&self) -> Result<CryptographicInventory, Box<dyn std::error::Error>> {
+    fn discover_cryptographic_inventory(
+        &self,
+    ) -> Result<CryptographicInventory, Box<dyn std::error::Error>> {
         let now = SystemTime::now();
-        
+
         Ok(CryptographicInventory {
             total_keys: 15423,
             classical: ClassicalKeyInventory {
@@ -581,7 +592,8 @@ impl EnterpriseCommandCenter {
                     key_id: "rsa-2048-prod-db-01".into(),
                     algorithm: "RSA-2048".into(),
                     expires_at: (now + std::time::Duration::from_secs(45 * 86400))
-                        .duration_since(UNIX_EPOCH)?.as_secs(),
+                        .duration_since(UNIX_EPOCH)?
+                        .as_secs(),
                     days_remaining: 45,
                     severity: AlertSeverity::High,
                     owner: "database-team".into(),
@@ -591,7 +603,8 @@ impl EnterpriseCommandCenter {
                     key_id: "ec-p256-auth-svc-03".into(),
                     algorithm: "EC-P256".into(),
                     expires_at: (now + std::time::Duration::from_secs(23 * 86400))
-                        .duration_since(UNIX_EPOCH)?.as_secs(),
+                        .duration_since(UNIX_EPOCH)?
+                        .as_secs(),
                     days_remaining: 23,
                     severity: AlertSeverity::Critical,
                     owner: "auth-team".into(),
@@ -616,7 +629,7 @@ impl EnterpriseCommandCenter {
             ],
         })
     }
-    
+
     /// Calculate PQC readiness score
     fn calculate_readiness_score(&self, inventory: &CryptographicInventory) -> u8 {
         let total = inventory.total_keys as f64;
@@ -625,18 +638,22 @@ impl EnterpriseCommandCenter {
             + inventory.hybrid.p256_dilithium5 as f64
             + inventory.hybrid.p384_dilithium5 as f64
             + inventory.hybrid.rsa3072_dilithium5 as f64;
-        
+
         let migration = ((pqc + hybrid) / total * 100.0).min(100.0);
         let hybrid_ratio = (hybrid / (pqc + hybrid + 1.0) * 100.0).min(100.0);
-        
-        let score = (migration * 0.3 + hybrid_ratio * 0.25 + 75.0 * 0.2 + 60.0 * 0.15 + 80.0 * 0.1) as u8;
+
+        let score =
+            (migration * 0.3 + hybrid_ratio * 0.25 + 75.0 * 0.2 + 60.0 * 0.15 + 80.0 * 0.1) as u8;
         score.min(100)
     }
-    
+
     /// Assess cryptographic risks
-    fn assess_risks(&self, inventory: &CryptographicInventory) -> Result<RiskAssessment, Box<dyn std::error::Error>> {
+    fn assess_risks(
+        &self,
+        inventory: &CryptographicInventory,
+    ) -> Result<RiskAssessment, Box<dyn std::error::Error>> {
         let harvest_now_risk = inventory.classical.rsa_2048 > 0 || inventory.classical.ec_p256 > 0;
-        
+
         Ok(RiskAssessment {
             overall_score: 42,
             quantum_vulnerability_score: 68,
@@ -672,7 +689,7 @@ impl EnterpriseCommandCenter {
             },
         })
     }
-    
+
     /// Generate remediation plan
     fn generate_remediation_plan(
         &self,
@@ -680,7 +697,7 @@ impl EnterpriseCommandCenter {
         _risk_assessment: &RiskAssessment,
     ) -> Result<RemediationPlan, Box<dyn std::error::Error>> {
         let now = Utc::now();
-        
+
         Ok(RemediationPlan {
             phases: vec![
                 MigrationPhase {
@@ -691,7 +708,8 @@ impl EnterpriseCommandCenter {
                     tasks: vec![
                         MigrationTask {
                             id: "TASK-001".into(),
-                            description: "Complete cryptographic inventory of all production systems".into(),
+                            description:
+                                "Complete cryptographic inventory of all production systems".into(),
                             effort_hours: 80,
                             status: TaskStatus::InProgress,
                             owner: "security-engineering".into(),
@@ -717,16 +735,15 @@ impl EnterpriseCommandCenter {
                     name: "Hybrid Pilot".into(),
                     start_date: (now + ChronoDuration::days(31)).to_rfc3339(),
                     end_date: (now + ChronoDuration::days(90)).to_rfc3339(),
-                    tasks: vec![
-                        MigrationTask {
-                            id: "TASK-003".into(),
-                            description: "Deploy Sirraya One hybrid signing for internal API gateway".into(),
-                            effort_hours: 120,
-                            status: TaskStatus::NotStarted,
-                            owner: "platform-engineering".into(),
-                            dependencies: vec!["TASK-002".into()],
-                        },
-                    ],
+                    tasks: vec![MigrationTask {
+                        id: "TASK-003".into(),
+                        description: "Deploy Sirraya One hybrid signing for internal API gateway"
+                            .into(),
+                        effort_hours: 120,
+                        status: TaskStatus::NotStarted,
+                        owner: "platform-engineering".into(),
+                        dependencies: vec!["TASK-002".into()],
+                    }],
                     success_criteria: vec![
                         "Hybrid signatures verified in staging".into(),
                         "Performance benchmarks meet SLAs".into(),
@@ -759,17 +776,15 @@ impl EnterpriseCommandCenter {
                 "Certificate authority migration".into(),
                 "Developer training".into(),
             ],
-            dependencies: vec![
-                MigrationDependency {
-                    id: "DEP-001".into(),
-                    description: "HSM firmware update for Dilithium5 support".into(),
-                    critical: true,
-                    external_system: Some("HSM vendor".into()),
-                },
-            ],
+            dependencies: vec![MigrationDependency {
+                id: "DEP-001".into(),
+                description: "HSM firmware update for Dilithium5 support".into(),
+                critical: true,
+                external_system: Some("HSM vendor".into()),
+            }],
         })
     }
-    
+
     /// Create executive summary
     fn create_executive_summary(
         &self,
@@ -780,7 +795,7 @@ impl EnterpriseCommandCenter {
         let pqc_ready = inventory.pqc.dilithium5 + inventory.hybrid.ed25519_dilithium5;
         let total = inventory.total_keys;
         let readiness_pct = pqc_ready as f64 / total as f64 * 100.0;
-        
+
         Ok(ExecutiveSummary {
             title: format!("Post-Quantum Readiness Assessment: {}", self.organization),
             prepared_for: self.organization.clone(),
@@ -788,9 +803,14 @@ impl EnterpriseCommandCenter {
             date: Utc::now().to_rfc3339(),
             key_findings: vec![
                 format!("{:.1}% of production keys are PQC-ready", readiness_pct),
-                format!("Harvest Now risk identified in {} systems", 
-                    inventory.classical.rsa_2048 + inventory.classical.ec_p256),
-                format!("Migration effort: {} person-hours", remediation_plan.total_hours),
+                format!(
+                    "Harvest Now risk identified in {} systems",
+                    inventory.classical.rsa_2048 + inventory.classical.ec_p256
+                ),
+                format!(
+                    "Migration effort: {} person-hours",
+                    remediation_plan.total_hours
+                ),
             ],
             recommendations: vec![
                 "Begin hybrid signing pilot for authentication services Q2 2026".into(),
@@ -811,21 +831,25 @@ impl EnterpriseCommandCenter {
             },
         })
     }
-    
+
     /// Save compliance artifacts
-    fn save_compliance_artifacts(&self, report: &ComplianceReport, timestamp: u64) -> Result<(), Box<dyn std::error::Error>> {
+    fn save_compliance_artifacts(
+        &self,
+        report: &ComplianceReport,
+        timestamp: u64,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let base_path = self.output_dir.join("compliance");
-        
+
         // JSON report
         let json_path = base_path.join(format!("compliance_report_{}.json", timestamp));
         fs::write(&json_path, serde_json::to_string_pretty(report)?)?;
-        
+
         // CSV export
         let csv_path = base_path.join("compliance_data.csv");
         let mut wtr = WriterBuilder::new()
             .has_headers(true)
             .from_path(&csv_path)?;
-        
+
         wtr.write_record(&["Framework", "Status", "Last Audit", "Next Audit"])?;
         for framework in &report.compliance_framework {
             wtr.write_record(&[
@@ -836,59 +860,90 @@ impl EnterpriseCommandCenter {
             ])?;
         }
         wtr.flush()?;
-        
+
         // Executive summary (simulated PDF)
         let pdf_path = base_path.join(format!("executive_summary_{}.txt", timestamp));
-        fs::write(pdf_path, "Sirraya One Executive Summary Report - PDF generation available in production")?;
-        
+        fs::write(
+            pdf_path,
+            "Sirraya One Executive Summary Report - PDF generation available in production",
+        )?;
+
         Ok(())
     }
-    
+
     // ========================================================================
     // PERFORMANCE BENCHMARKING ENGINE
     // ========================================================================
-    
+
     /// Run comprehensive performance benchmarks
     pub fn run_benchmark_suite(&mut self) -> Result<BenchmarkSuite, Box<dyn std::error::Error>> {
         println!("\nSIRRAYA ONE BENCHMARK ENGINE");
         println!("  Algorithm: Dilithium5 (ML-DSA-87)");
         println!("  Standard: NIST FIPS 203");
-        println!("  {} Starting benchmark", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"));
-        
+        println!(
+            "  {} Starting benchmark",
+            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S")
+        );
+
         fs::create_dir_all(self.output_dir.join("benchmarks"))?;
-        
-        let run_id = format!("BENCH-{}-{:010}", 
+
+        let run_id = format!(
+            "BENCH-{}-{:010}",
             Utc::now().format("%Y%m%d"),
             SystemTime::now().duration_since(UNIX_EPOCH)?.as_micros()
         );
-        
+
         let environment = self.capture_environment();
         let mut results = BTreeMap::new();
-        
+
         println!("  \u{2022} Key generation ({} samples)", KEYGEN_SAMPLES);
-        results.insert("key_generation".into(), self.benchmark_key_generation(KEYGEN_SAMPLES)?);
-        
+        results.insert(
+            "key_generation".into(),
+            self.benchmark_key_generation(KEYGEN_SAMPLES)?,
+        );
+
         println!("  \u{2022} Signing ({} samples)", SIGN_SAMPLES);
-        results.insert("signing_1kb".into(), self.benchmark_signing(SIGN_SAMPLES, 1024)?);
-        results.insert("signing_64kb".into(), self.benchmark_signing(SIGN_SAMPLES / 2, 65536)?);
-        
+        results.insert(
+            "signing_1kb".into(),
+            self.benchmark_signing(SIGN_SAMPLES, 1024)?,
+        );
+        results.insert(
+            "signing_64kb".into(),
+            self.benchmark_signing(SIGN_SAMPLES / 2, 65536)?,
+        );
+
         println!("  \u{2022} Verification ({} samples)", VERIFY_SAMPLES);
-        results.insert("verification".into(), self.benchmark_verification(VERIFY_SAMPLES)?);
-        
-        println!("  \u{2022} Key serialization ({} samples)", SERIALIZE_SAMPLES);
-        results.insert("key_serialization".into(), self.benchmark_serialization(SERIALIZE_SAMPLES)?);
-        
+        results.insert(
+            "verification".into(),
+            self.benchmark_verification(VERIFY_SAMPLES)?,
+        );
+
+        println!(
+            "  \u{2022} Key serialization ({} samples)",
+            SERIALIZE_SAMPLES
+        );
+        results.insert(
+            "key_serialization".into(),
+            self.benchmark_serialization(SERIALIZE_SAMPLES)?,
+        );
+
         println!("  \u{2022} Hybrid operations ({} samples)", SIGN_SAMPLES);
-        results.insert("hybrid_signatures".into(), self.benchmark_hybrid_operations(SIGN_SAMPLES)?);
-        
+        results.insert(
+            "hybrid_signatures".into(),
+            self.benchmark_hybrid_operations(SIGN_SAMPLES)?,
+        );
+
         println!("  \u{2022} Concurrent throughput ({} ops)", CONCURRENT_OPS);
-        results.insert("concurrent_throughput".into(), self.benchmark_concurrent_verification()?);
-        
+        results.insert(
+            "concurrent_throughput".into(),
+            self.benchmark_concurrent_verification()?,
+        );
+
         results.insert("memory_profile".into(), self.benchmark_memory_usage()?);
-        
+
         let comparison = self.generate_comparison_baseline(&results);
         let recommendations = self.analyze_performance(&results);
-        
+
         let benchmark = BenchmarkSuite {
             run_id: run_id.clone(),
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
@@ -897,31 +952,35 @@ impl EnterpriseCommandCenter {
             comparison,
             recommendations,
         };
-        
+
         // Save results
-        let bench_path = self.output_dir
+        let bench_path = self
+            .output_dir
             .join("benchmarks")
             .join(format!("benchmark_{}.json", run_id));
-        
+
         fs::write(&bench_path, serde_json::to_string_pretty(&benchmark)?)?;
-        
+
         // Generate dashboard
         self.generate_benchmark_dashboard(&benchmark)?;
-        
+
         println!("\n  \u{2713} Benchmark complete");
         println!("  \u{2713} Results saved: {}", bench_path.display());
-        
+
         if let Some(v) = benchmark.results.get("verification") {
-            println!("  \u{2713} Verification: {:.3} ms (p50)", v.mean_us / 1000.0);
+            println!(
+                "  \u{2713} Verification: {:.3} ms (p50)",
+                v.mean_us / 1000.0
+            );
             println!("  \u{2713} Throughput: {:.0} ops/sec", v.throughput_sec);
         }
-        
+
         let benchmark_clone = benchmark.clone();
         self.benchmark_baseline = Some(benchmark_clone);
-        
+
         Ok(benchmark)
     }
-    
+
     /// Capture benchmark environment
     fn capture_environment(&self) -> BenchmarkEnvironment {
         BenchmarkEnvironment {
@@ -930,104 +989,130 @@ impl EnterpriseCommandCenter {
             memory_mb: 16384,
             os: format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
             rust_version: rustc_version_runtime::version().to_string(),
-            profile: if cfg!(debug_assertions) { "debug" } else { "release" }.into(),
+            profile: if cfg!(debug_assertions) {
+                "debug"
+            } else {
+                "release"
+            }
+            .into(),
             compiler_flags: vec!["-C target-cpu=native".into()],
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
         }
     }
-    
+
     /// Benchmark key generation
-    fn benchmark_key_generation(&self, samples: u32) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
+    fn benchmark_key_generation(
+        &self,
+        samples: u32,
+    ) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
         let mut timings = Vec::with_capacity(samples as usize);
-        
+
         for _ in 0..samples {
             let start = Instant::now();
             let _ = Dilithium5::keypair()?;
             timings.push(start.elapsed());
         }
-        
+
         self.analyze_timings(&timings, "key_generation")
     }
-    
+
     /// Benchmark signing
-    fn benchmark_signing(&self, samples: u32, message_size: usize) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
+    fn benchmark_signing(
+        &self,
+        samples: u32,
+        message_size: usize,
+    ) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
         let (_, sk) = Dilithium5::keypair()?;
         let message = vec![0xAB; message_size];
-        
+
         let mut timings = Vec::with_capacity(samples as usize);
-        
+
         for _ in 0..samples {
             let start = Instant::now();
             let _ = Dilithium5::sign(&sk, &message)?;
             timings.push(start.elapsed());
         }
-        
+
         self.analyze_timings(&timings, &format!("sign_{}b", message_size))
     }
-    
+
     /// Benchmark verification
-    fn benchmark_verification(&self, samples: u32) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
+    fn benchmark_verification(
+        &self,
+        samples: u32,
+    ) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
         let (pk, sk) = Dilithium5::keypair()?;
         let message = b"Sirraya One Benchmark Verification Message";
         let signature = Dilithium5::sign(&sk, message)?;
-        
+
         let mut timings = Vec::with_capacity(samples as usize);
-        
+
         for _ in 0..samples {
             let start = Instant::now();
             let _ = Dilithium5::verify(&pk, message, &signature)?;
             timings.push(start.elapsed());
         }
-        
+
         self.analyze_timings(&timings, "verification")
     }
-    
+
     /// Benchmark key serialization
-    fn benchmark_serialization(&self, samples: u32) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
+    fn benchmark_serialization(
+        &self,
+        samples: u32,
+    ) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
         let (pk, sk) = Dilithium5::keypair()?;
-        
+
         let mut timings = Vec::with_capacity(samples as usize);
-        
+
         for _ in 0..samples {
             let start = Instant::now();
             let _ = hex::encode(pk);
             let _ = hex::encode(sk);
             timings.push(start.elapsed());
         }
-        
+
         self.analyze_timings(&timings, "key_serialization")
     }
-    
+
     /// Benchmark hybrid operations (simulated)
-    fn benchmark_hybrid_operations(&self, samples: u32) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
+    fn benchmark_hybrid_operations(
+        &self,
+        samples: u32,
+    ) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
         let (_, sk_d5) = Dilithium5::keypair()?;
         let message = b"Hybrid signature benchmark";
-        
+
         let mut timings = Vec::with_capacity(samples as usize);
-        
+
         for _ in 0..samples {
             let start = Instant::now();
             let _ = Dilithium5::sign(&sk_d5, message)?;
             timings.push(start.elapsed());
         }
-        
+
         self.analyze_timings(&timings, "hybrid_sign")
     }
-    
+
     /// Benchmark concurrent verification
-    fn benchmark_concurrent_verification(&self) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
+    fn benchmark_concurrent_verification(
+        &self,
+    ) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
         let (pk, sk) = Dilithium5::keypair()?;
         let message = b"Concurrent verification benchmark";
         let signature = Dilithium5::sign(&sk, message)?;
-        
+
         let start = Instant::now();
-        
+
         (0..CONCURRENT_OPS).into_par_iter().for_each(|_| {
             let _ = Dilithium5::verify(&pk, message, &signature);
         });
-        
+
         let duration = start.elapsed();
-        
+
         Ok(BenchmarkResult {
             operation: "concurrent_verification".into(),
             samples: CONCURRENT_OPS,
@@ -1042,7 +1127,7 @@ impl EnterpriseCommandCenter {
             throughput_sec: CONCURRENT_OPS as f64 / duration.as_secs_f64(),
         })
     }
-    
+
     /// Benchmark memory usage (estimated)
     fn benchmark_memory_usage(&self) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
         Ok(BenchmarkResult {
@@ -1059,26 +1144,26 @@ impl EnterpriseCommandCenter {
             throughput_sec: 0.0,
         })
     }
-    
+
     /// Statistical analysis of timings
-    fn analyze_timings(&self, timings: &[std::time::Duration], operation: &str) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
-        let mut us: Vec<f64> = timings.iter()
-            .map(|d| d.as_micros() as f64)
-            .collect();
-        
+    fn analyze_timings(
+        &self,
+        timings: &[std::time::Duration],
+        operation: &str,
+    ) -> Result<BenchmarkResult, Box<dyn std::error::Error>> {
+        let mut us: Vec<f64> = timings.iter().map(|d| d.as_micros() as f64).collect();
+
         us.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        
+
         let sum: f64 = us.iter().sum();
         let mean = sum / us.len() as f64;
         let median = us[us.len() / 2];
         let p90 = us[(us.len() as f64 * 0.90) as usize];
         let p95 = us[(us.len() as f64 * 0.95) as usize];
         let p99 = us[(us.len() as f64 * 0.99) as usize];
-        
-        let variance = us.iter()
-            .map(|x| (x - mean).powi(2))
-            .sum::<f64>() / us.len() as f64;
-        
+
+        let variance = us.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / us.len() as f64;
+
         Ok(BenchmarkResult {
             operation: operation.into(),
             samples: us.len() as u32,
@@ -1093,16 +1178,21 @@ impl EnterpriseCommandCenter {
             throughput_sec: 1_000_000.0 / mean,
         })
     }
-    
+
     /// Generate comparison with baseline
-    fn generate_comparison_baseline(&self, results: &BTreeMap<String, BenchmarkResult>) -> ComparisonBaseline {
+    fn generate_comparison_baseline(
+        &self,
+        results: &BTreeMap<String, BenchmarkResult>,
+    ) -> ComparisonBaseline {
         let mut improvements = HashMap::new();
         let mut regressions = HashMap::new();
-        
+
         if let Some(baseline) = &self.benchmark_baseline {
             for (op, result) in results {
                 if let Some(baseline_result) = baseline.results.get(op) {
-                    let change = (baseline_result.mean_us - result.mean_us) / baseline_result.mean_us * 100.0;
+                    let change = (baseline_result.mean_us - result.mean_us)
+                        / baseline_result.mean_us
+                        * 100.0;
                     if change > 0.0 {
                         improvements.insert(op.clone(), change);
                     } else {
@@ -1111,9 +1201,11 @@ impl EnterpriseCommandCenter {
                 }
             }
         }
-        
+
         ComparisonBaseline {
-            baseline_id: self.benchmark_baseline.as_ref()
+            baseline_id: self
+                .benchmark_baseline
+                .as_ref()
                 .map(|b| b.run_id.clone())
                 .unwrap_or_else(|| "initial".into()),
             baseline_date: Utc::now().to_rfc3339(),
@@ -1121,23 +1213,29 @@ impl EnterpriseCommandCenter {
             regressions,
         }
     }
-    
+
     /// Analyze performance bottlenecks
-    fn analyze_performance(&self, results: &BTreeMap<String, BenchmarkResult>) -> Vec<PerformanceRecommendation> {
+    fn analyze_performance(
+        &self,
+        results: &BTreeMap<String, BenchmarkResult>,
+    ) -> Vec<PerformanceRecommendation> {
         let mut recommendations = Vec::new();
-        
+
         if let Some(verify) = results.get("verification") {
             if verify.mean_us > VERIFY_THRESHOLD_US {
                 recommendations.push(PerformanceRecommendation {
                     component: "NTT".into(),
-                    observation: format!("Verification time exceeds threshold ({:.1}μs)", verify.mean_us),
+                    observation: format!(
+                        "Verification time exceeds threshold ({:.1}μs)",
+                        verify.mean_us
+                    ),
                     suggestion: "Enable AVX2/NEON optimized polynomial multiplication".into(),
                     estimated_improvement: 35.0,
                     effort: EffortLevel::Medium,
                 });
             }
         }
-        
+
         if let Some(sign) = results.get("signing_1kb") {
             if sign.mean_us > SIGN_THRESHOLD_US {
                 recommendations.push(PerformanceRecommendation {
@@ -1149,17 +1247,21 @@ impl EnterpriseCommandCenter {
                 });
             }
         }
-        
+
         recommendations
     }
-    
+
     /// Generate benchmark dashboard HTML
-    fn generate_benchmark_dashboard(&self, benchmark: &BenchmarkSuite) -> Result<(), Box<dyn std::error::Error>> {
+    fn generate_benchmark_dashboard(
+        &self,
+        benchmark: &BenchmarkSuite,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let verification = benchmark.results.get("verification").unwrap();
         let keygen = benchmark.results.get("key_generation").unwrap();
         let signing = benchmark.results.get("signing_1kb").unwrap();
-        
-        let html = format!(r#"
+
+        let html = format!(
+            r#"
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -1261,88 +1363,105 @@ impl EnterpriseCommandCenter {
             signing.p95_us / 1000.0,
             signing.throughput_sec,
         );
-        
-        fs::write(self.output_dir.join("benchmarks").join("dashboard.html"), html)?;
+
+        fs::write(
+            self.output_dir.join("benchmarks").join("dashboard.html"),
+            html,
+        )?;
         Ok(())
     }
-    
+
     // ========================================================================
     // CRYPTOGRAPHIC AGILITY TESTING
     // ========================================================================
-    
+
     /// Run cryptographic agility test suite
     pub fn run_agility_tests(&self) -> Result<AgilityTestReport, Box<dyn std::error::Error>> {
         println!("\nSIRRAYA ONE AGILITY TEST ENGINE");
         println!("  Testing forward/backward compatibility");
-        println!("  {} Starting tests", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"));
-        
+        println!(
+            "  {} Starting tests",
+            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S")
+        );
+
         fs::create_dir_all(self.output_dir.join("agility"))?;
-        
+
         let mut suites = Vec::new();
         suites.push(self.test_version_migration()?);
         suites.push(self.test_key_format_compatibility()?);
         suites.push(self.test_signature_format_compatibility()?);
         suites.push(self.test_hsm_compatibility()?);
-        
+
         let rollback = self.test_rollback_safety()?;
-        
+
         let report = AgilityTestReport {
-            report_id: format!("AGILITY-{:015}", SystemTime::now().duration_since(UNIX_EPOCH)?.as_micros()),
+            report_id: format!(
+                "AGILITY-{:015}",
+                SystemTime::now().duration_since(UNIX_EPOCH)?.as_micros()
+            ),
             timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs(),
             test_suites: suites,
             compatibility_matrix: CompatibilityMatrix {
                 key_formats: HashMap::new(),
                 signature_formats: HashMap::new(),
-                hsm_vendors: vec!["SoftHSM".into(), "AWS CloudHSM".into(), "Thales Luna".into()],
+                hsm_vendors: vec![
+                    "SoftHSM".into(),
+                    "AWS CloudHSM".into(),
+                    "Thales Luna".into(),
+                ],
                 language_sdks: vec!["Rust".into(), "Go".into(), "Python".into(), "Java".into()],
             },
-            migration_paths: vec![
-                VersionMigrationPath {
-                    from: "0.1.0".into(),
-                    to: VERSION.into(),
-                    breaking_changes: vec![],
-                    automatic: true,
-                    required_actions: vec!["Update Sirraya One crate version".into()],
-                }
-            ],
+            migration_paths: vec![VersionMigrationPath {
+                from: "0.1.0".into(),
+                to: VERSION.into(),
+                breaking_changes: vec![],
+                automatic: true,
+                required_actions: vec!["Update Sirraya One crate version".into()],
+            }],
             rollback_verification: rollback,
         };
-        
-        let report_path = self.output_dir
+
+        let report_path = self
+            .output_dir
             .join("agility")
             .join(format!("agility_report_{}.json", report.timestamp));
-        
+
         fs::write(&report_path, serde_json::to_string_pretty(&report)?)?;
-        
+
         println!("  \u{2713} Agility tests complete");
-        println!("  \u{2713} Pass rate: {}/{}", 
+        println!(
+            "  \u{2713} Pass rate: {}/{}",
             report.test_suites.iter().filter(|s| s.passed).count(),
             report.test_suites.len()
         );
-        
+
         Ok(report)
     }
-    
+
     /// Test version migration compatibility
     fn test_version_migration(&self) -> Result<AgilityTestSuite, Box<dyn std::error::Error>> {
         let mut tests = Vec::new();
-        
+
         let (pk, sk) = Dilithium5::keypair()?;
         let msg = b"Agility test vector - version compatibility";
         let sig = Dilithium5::sign(&sk, msg)?;
         let valid = Dilithium5::verify(&pk, msg, &sig)?;
-        
+
         tests.push(AgilityTest {
             id: "VERSION-001".into(),
             scenario: "Self-consistency verification".into(),
             passed: valid,
             duration_ms: 0.5,
-            error: if valid { None } else { Some("Verification failed".into()) },
+            error: if valid {
+                None
+            } else {
+                Some("Verification failed".into())
+            },
         });
-        
+
         let passed = tests.iter().all(|t| t.passed);
         let tests_clone = tests.clone();
-        
+
         Ok(AgilityTestSuite {
             name: "Version Migration Compatibility".into(),
             description: "Verify cryptographic consistency across versions".into(),
@@ -1351,15 +1470,17 @@ impl EnterpriseCommandCenter {
             coverage: 100.0,
         })
     }
-    
+
     /// Test key format compatibility
-    fn test_key_format_compatibility(&self) -> Result<AgilityTestSuite, Box<dyn std::error::Error>> {
+    fn test_key_format_compatibility(
+        &self,
+    ) -> Result<AgilityTestSuite, Box<dyn std::error::Error>> {
         let mut tests = Vec::new();
-        
+
         let (pk, _) = Dilithium5::keypair()?;
         let pk_hex = hex::encode(pk);
         let pk_decoded = hex::decode(pk_hex)?;
-        
+
         tests.push(AgilityTest {
             id: "KEY-001".into(),
             scenario: "Hex encoding/decoding roundtrip".into(),
@@ -1367,10 +1488,10 @@ impl EnterpriseCommandCenter {
             duration_ms: 0.1,
             error: None,
         });
-        
+
         let passed = tests.iter().all(|t| t.passed);
         let tests_clone = tests.clone();
-        
+
         Ok(AgilityTestSuite {
             name: "Key Format Compatibility".into(),
             description: "Verify key serialization formats".into(),
@@ -1379,21 +1500,23 @@ impl EnterpriseCommandCenter {
             coverage: 100.0,
         })
     }
-    
+
     /// Test signature format compatibility
-    fn test_signature_format_compatibility(&self) -> Result<AgilityTestSuite, Box<dyn std::error::Error>> {
+    fn test_signature_format_compatibility(
+        &self,
+    ) -> Result<AgilityTestSuite, Box<dyn std::error::Error>> {
         let mut tests = Vec::new();
-        
+
         let (pk, sk) = Dilithium5::keypair()?;
         let msg = b"Signature format test vector";
         let sig = Dilithium5::sign(&sk, msg)?;
         let sig_hex = hex::encode(sig);
         let sig_decoded = hex::decode(sig_hex)?;
-        
+
         let mut reconstructed = [0u8; SIGNBYTES];
         reconstructed.copy_from_slice(&sig_decoded);
         let valid = Dilithium5::verify(&pk, msg, &reconstructed)?;
-        
+
         tests.push(AgilityTest {
             id: "SIG-001".into(),
             scenario: "Signature hex roundtrip".into(),
@@ -1401,10 +1524,10 @@ impl EnterpriseCommandCenter {
             duration_ms: 0.3,
             error: None,
         });
-        
+
         let passed = tests.iter().all(|t| t.passed);
         let tests_clone = tests.clone();
-        
+
         Ok(AgilityTestSuite {
             name: "Signature Format Compatibility".into(),
             description: "Verify signature serialization formats".into(),
@@ -1413,26 +1536,24 @@ impl EnterpriseCommandCenter {
             coverage: 100.0,
         })
     }
-    
+
     /// Test HSM compatibility (simulated)
     fn test_hsm_compatibility(&self) -> Result<AgilityTestSuite, Box<dyn std::error::Error>> {
         Ok(AgilityTestSuite {
             name: "HSM Integration Compatibility".into(),
             description: "Verify PKCS#11 HSM integration".into(),
-            tests: vec![
-                AgilityTest {
-                    id: "HSM-001".into(),
-                    scenario: "PKCS#8 key import".into(),
-                    passed: true,
-                    duration_ms: 2.5,
-                    error: None,
-                }
-            ],
+            tests: vec![AgilityTest {
+                id: "HSM-001".into(),
+                scenario: "PKCS#8 key import".into(),
+                passed: true,
+                duration_ms: 2.5,
+                error: None,
+            }],
             passed: true,
             coverage: 75.0,
         })
     }
-    
+
     /// Test rollback safety
     fn test_rollback_safety(&self) -> Result<RollbackVerification, Box<dyn std::error::Error>> {
         Ok(RollbackVerification {
@@ -1442,40 +1563,47 @@ impl EnterpriseCommandCenter {
             failures: 0,
         })
     }
-    
+
     // ========================================================================
     // SIEM INTEGRATION
     // ========================================================================
-    
+
     /// Export SIEM-compatible feeds
-    pub fn export_siem_feeds(&self, report: &ComplianceReport) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn export_siem_feeds(
+        &self,
+        report: &ComplianceReport,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         println!("\nSIRRAYA ONE SIEM EXPORT");
         println!("  Targets: Splunk, Datadog, Sentinel, ELK");
-        
+
         fs::create_dir_all(self.output_dir.join("siem"))?;
-        
+
         // Splunk HEC format
-        let splunk_events: Vec<Value> = report.compliance_framework.iter().map(|f| {
-            json!({
-                "time": report.generated_at,
-                "source": "sirraya-compliance",
-                "sourcetype": "pqc:compliance",
-                "event": {
-                    "framework": f.name,
-                    "status": format!("{:?}", f.status),
-                    "organization": report.organization,
-                    "environment": report.environment,
-                    "report_id": report.report_id,
-                    "version": VERSION,
-                }
+        let splunk_events: Vec<Value> = report
+            .compliance_framework
+            .iter()
+            .map(|f| {
+                json!({
+                    "time": report.generated_at,
+                    "source": "sirraya-compliance",
+                    "sourcetype": "pqc:compliance",
+                    "event": {
+                        "framework": f.name,
+                        "status": format!("{:?}", f.status),
+                        "organization": report.organization,
+                        "environment": report.environment,
+                        "report_id": report.report_id,
+                        "version": VERSION,
+                    }
+                })
             })
-        }).collect();
-        
+            .collect();
+
         fs::write(
             self.output_dir.join("siem").join("splunk_hec.json"),
-            serde_json::to_string_pretty(&splunk_events)?
+            serde_json::to_string_pretty(&splunk_events)?,
         )?;
-        
+
         // Datadog metrics format
         let datadog = json!({
             "series": [{
@@ -1489,12 +1617,12 @@ impl EnterpriseCommandCenter {
                 ]
             }]
         });
-        
+
         fs::write(
             self.output_dir.join("siem").join("datadog_metrics.json"),
-            serde_json::to_string_pretty(&datadog)?
+            serde_json::to_string_pretty(&datadog)?,
         )?;
-        
+
         // Azure Sentinel CEF format
         fs::write(
             self.output_dir.join("siem").join("sentinel_cef.cef"),
@@ -1506,38 +1634,47 @@ impl EnterpriseCommandCenter {
                 report.report_id
             )
         )?;
-        
+
         // ELK/Logstash format
         fs::write(
             self.output_dir.join("siem").join("elk.json"),
-            serde_json::to_string_pretty(&report)?
+            serde_json::to_string_pretty(&report)?,
         )?;
-        
+
         println!("  \u{2713} Splunk HEC: siem/splunk_hec.json");
         println!("  \u{2713} Datadog: siem/datadog_metrics.json");
         println!("  \u{2713} Sentinel: siem/sentinel_cef.cef");
         println!("  \u{2713} ELK: siem/elk.json");
-        
+
         Ok(())
     }
-    
+
     // ========================================================================
     // EXECUTIVE DASHBOARD
     // ========================================================================
-    
+
     /// Generate executive dashboard HTML
-    pub fn generate_executive_dashboard(&self, compliance: &ComplianceReport, benchmark: &BenchmarkSuite) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn generate_executive_dashboard(
+        &self,
+        compliance: &ComplianceReport,
+        benchmark: &BenchmarkSuite,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         println!("\nSIRRAYA ONE EXECUTIVE DASHBOARD");
         println!("  Generating CISO/CTO report");
-        
-        let risk_items = compliance.risk_assessment.findings.iter()
-            .map(|f| format!(
-                "<li><strong>[{:?}]</strong> {} - {}</li>",
-                f.severity, f.title, f.description
-            ))
+
+        let risk_items = compliance
+            .risk_assessment
+            .findings
+            .iter()
+            .map(|f| {
+                format!(
+                    "<li><strong>[{:?}]</strong> {} - {}</li>",
+                    f.severity, f.title, f.description
+                )
+            })
             .collect::<Vec<_>>()
             .join("");
-        
+
         let compliance_rows = compliance.compliance_framework.iter()
             .map(|f| format!(
                 "<tr><td>{}</td><td><span class=\"status-{}\">{:?}</span></td><td>{}</td><td>{}</td></tr>",
@@ -1554,20 +1691,21 @@ impl EnterpriseCommandCenter {
             ))
             .collect::<Vec<_>>()
             .join("");
-        
+
         let verification = benchmark.results.get("verification").unwrap();
         let keygen = benchmark.results.get("key_generation").unwrap();
         let signing = benchmark.results.get("signing_1kb").unwrap();
-        
-        let total_classical = compliance.cryptographic_inventory.classical.rsa_2048 
+
+        let total_classical = compliance.cryptographic_inventory.classical.rsa_2048
             + compliance.cryptographic_inventory.classical.rsa_3072
             + compliance.cryptographic_inventory.classical.rsa_4096
             + compliance.cryptographic_inventory.classical.ec_p256
             + compliance.cryptographic_inventory.classical.ec_p384
             + compliance.cryptographic_inventory.classical.ec_p521
             + compliance.cryptographic_inventory.classical.ed25519;
-        
-        let html = format!(r#"
+
+        let html = format!(
+            r#"
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -1825,9 +1963,13 @@ impl EnterpriseCommandCenter {
             keygen.mean_us / 1000.0,
             signing.mean_us / 1000.0,
             SIGNBYTES,
-            if compliance.risk_assessment.overall_score >= 70 { "color: #059669;" } 
-                else if compliance.risk_assessment.overall_score >= 40 { "color: #b45309;" } 
-                else { "color: #b91c1c;" },
+            if compliance.risk_assessment.overall_score >= 70 {
+                "color: #059669;"
+            } else if compliance.risk_assessment.overall_score >= 40 {
+                "color: #b45309;"
+            } else {
+                "color: #b91c1c;"
+            },
             compliance.risk_assessment.overall_score,
             compliance.risk_assessment.quantum_vulnerability_score,
             risk_items,
@@ -1841,10 +1983,10 @@ impl EnterpriseCommandCenter {
             VERSION,
             Utc::now().format("%Y-%m-%d %H:%M:%S")
         );
-        
+
         fs::write(self.output_dir.join("executive_dashboard.html"), html)?;
         println!("  \u{2713} Dashboard: executive_dashboard.html");
-        
+
         Ok(())
     }
 }
@@ -1854,39 +1996,39 @@ impl EnterpriseCommandCenter {
 // ============================================================================
 
 /// Sirraya One Enterprise Command Center
-/// 
+///
 /// Complete post-quantum cryptography migration toolkit for enterprises.
 /// NIST FIPS 203 compliant Dilithium5 implementation with comprehensive
 /// compliance reporting, benchmarking, and integration tools.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
-    
+
     println!("{}", "=".repeat(80));
     println!("SIRRAYA ONE ENTERPRISE COMMAND CENTER v{}", VERSION);
     println!("Post-Quantum Cryptography Migration Toolkit");
     println!("NIST FIPS 203 Dilithium5 (ML-DSA-87)");
     println!("{}", "=".repeat(80));
-    
+
     // Initialize command center
     let mut cmd = EnterpriseCommandCenter::new("Sirraya Labs", "production");
-    
+
     // Phase 1: Compliance assessment
     let compliance = cmd.generate_compliance_report()?;
-    
+
     // Phase 2: Performance benchmarking
     let benchmark = cmd.run_benchmark_suite()?;
-    
+
     // Phase 3: Agility testing
     let agility = cmd.run_agility_tests()?;
-    
+
     // Phase 4: SIEM integration
     cmd.export_siem_feeds(&compliance)?;
-    
+
     // Phase 5: Executive dashboard
     cmd.generate_executive_dashboard(&compliance, &benchmark)?;
-    
+
     let duration = start.elapsed();
-    
+
     println!("\n{}", "=".repeat(80));
     println!("SIRRAYA ONE COMMAND CENTER - COMPLETE");
     println!("{}", "=".repeat(80));
@@ -1896,11 +2038,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Report ID: {}", compliance.report_id);
     println!("  Readiness Score: {}/100", compliance.pqc_readiness_score);
     println!("  Benchmark: {}", benchmark.run_id);
-    println!("  Agility: {}/{} passed", 
+    println!(
+        "  Agility: {}/{} passed",
         agility.test_suites.iter().filter(|s| s.passed).count(),
         agility.test_suites.len()
     );
-    
+
     println!("\nOutput Directory Structure:");
     println!("  {}/", cmd.output_dir.display());
     println!("  \u{251c}\u{2500} compliance/");
@@ -1918,27 +2061,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  \u{2502}   \u{251c}\u{2500} sentinel_cef.cef");
     println!("  \u{2502}   \u{2514}\u{2500} elk.json");
     println!("  \u{2514}\u{2500} executive_dashboard.html");
-    
+
     println!("\nNext Steps:");
     println!("  1. Review executive_dashboard.html for CISO/CTO presentation");
     println!("  2. Import SIEM feeds into security monitoring");
     println!("  3. Begin hybrid pilot per migration timeline");
     println!("  4. Schedule quarterly readiness review");
-    
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_command_center_initialization() {
         let cmd = EnterpriseCommandCenter::new("Test Organization", "test");
         assert_eq!(cmd.organization, "Test Organization");
         assert_eq!(cmd.environment, "test");
     }
-    
+
     #[test]
     fn test_readiness_score_calculation() {
         let cmd = EnterpriseCommandCenter::new("Test", "test");
@@ -1947,7 +2090,7 @@ mod tests {
         assert!(score <= 100);
         assert!(score >= 0);
     }
-    
+
     #[test]
     fn test_benchmark_analysis() {
         let cmd = EnterpriseCommandCenter::new("Test", "test");

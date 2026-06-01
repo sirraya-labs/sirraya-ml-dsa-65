@@ -1,9 +1,9 @@
 // examples/sign_verify_demo_no_question.rs
 //! Complete demonstration without using the ? operator
 
-use ml_dsa_65::MlDsa65;
 #[cfg(feature = "masking")]
-use ml_dsa_65::dilithium_masked::masked::{MaskedSecretKey, masked_sign};
+use ml_dsa_65::dilithium_masked::masked::{masked_sign, MaskedSecretKey};
+use ml_dsa_65::MlDsa65;
 use std::time::Instant;
 
 fn main() {
@@ -40,7 +40,7 @@ fn standard_sign_verify() {
     println!("Step 1: Generating keypair...");
     let start = Instant::now();
     let keypair_result = MlDsa65::keypair();
-    
+
     let (public_key, secret_key) = match keypair_result {
         Ok(kp) => kp,
         Err(e) => {
@@ -49,13 +49,17 @@ fn standard_sign_verify() {
         }
     };
     let keygen_time = start.elapsed();
-    
+
     println!("   ✓ Public key:  {} bytes", public_key.len());
     println!("   ✓ Secret key:  {} bytes", secret_key.len());
-    println!("     Public key prefix: {:02x}{:02x}{:02x}...", 
-             public_key[0], public_key[1], public_key[2]);
-    println!("     Secret key prefix: {:02x}{:02x}{:02x}...", 
-             secret_key[0], secret_key[1], secret_key[2]);
+    println!(
+        "     Public key prefix: {:02x}{:02x}{:02x}...",
+        public_key[0], public_key[1], public_key[2]
+    );
+    println!(
+        "     Secret key prefix: {:02x}{:02x}{:02x}...",
+        secret_key[0], secret_key[1], secret_key[2]
+    );
     println!("     Key generation time: {:?}\n", keygen_time);
 
     // Step 2: Create a message
@@ -68,7 +72,7 @@ fn standard_sign_verify() {
     println!("  Step 3: Signing message...");
     let start = Instant::now();
     let sign_result = MlDsa65::sign(&secret_key, message);
-    
+
     let signature = match sign_result {
         Ok(sig) => sig,
         Err(e) => {
@@ -77,7 +81,7 @@ fn standard_sign_verify() {
         }
     };
     let sign_time = start.elapsed();
-    
+
     println!("   ✓ Signature: {} bytes", signature.len());
     println!("   First 32 bytes: {:02x?}...", &signature[..32]);
     println!("     Signing time: {:?}\n", sign_time);
@@ -87,10 +91,13 @@ fn standard_sign_verify() {
     let start = Instant::now();
     let verify_result = MlDsa65::verify(&public_key, message, &signature);
     let verify_time = start.elapsed();
-    
+
     match verify_result {
         Ok(is_valid) => {
-            println!("   ✓ Verification result: {}", if is_valid { "VALID ✓" } else { "INVALID ✗" });
+            println!(
+                "   ✓ Verification result: {}",
+                if is_valid { "VALID ✓" } else { "INVALID ✗" }
+            );
         }
         Err(e) => {
             println!("   ✗ Verification error: {}", e);
@@ -114,7 +121,7 @@ fn masked_sign_verify() {
     println!("Step 1: Generating keypair...");
     let start = Instant::now();
     let keypair_result = MlDsa65::keypair();
-    
+
     let (public_key, secret_key) = match keypair_result {
         Ok(kp) => kp,
         Err(e) => {
@@ -123,7 +130,7 @@ fn masked_sign_verify() {
         }
     };
     let keygen_time = start.elapsed();
-    
+
     println!("   ✓ Public key:  {} bytes", public_key.len());
     println!("   ✓ Secret key:  {} bytes", secret_key.len());
     println!("     Key generation time: {:?}\n", keygen_time);
@@ -131,7 +138,7 @@ fn masked_sign_verify() {
     println!("  Step 2: Creating masked secret key...");
     let start = Instant::now();
     let masked_result = MaskedSecretKey::from_plain(&secret_key, &mut rng);
-    
+
     let mut masked_sk = match masked_result {
         Ok(msk) => msk,
         Err(e) => {
@@ -140,7 +147,7 @@ fn masked_sign_verify() {
         }
     };
     let mask_time = start.elapsed();
-    
+
     println!("   ✓ Secret key is now split into arithmetic shares");
     println!("   ✓ Each share is stored separately in memory");
     println!("   ✓ The actual secret never exists in a single location");
@@ -154,7 +161,7 @@ fn masked_sign_verify() {
     println!("  Step 4: Signing with masked implementation (SUCRE)...");
     let start = Instant::now();
     let sign_result = masked_sign(&mut masked_sk, message, &mut rng);
-    
+
     let signature = match sign_result {
         Ok(sig) => sig,
         Err(e) => {
@@ -163,7 +170,7 @@ fn masked_sign_verify() {
         }
     };
     let sign_time = start.elapsed();
-    
+
     println!("   ✓ Signature: {} bytes", signature.len());
     println!("   First 32 bytes: {:02x?}...", &signature[..32]);
     println!("   ✓ SUCRE shuffling applied during signing");
@@ -174,10 +181,13 @@ fn masked_sign_verify() {
     let start = Instant::now();
     let verify_result = MlDsa65::verify(&public_key, message, &signature);
     let verify_time = start.elapsed();
-    
+
     match verify_result {
         Ok(is_valid) => {
-            println!("   ✓ Verification result: {}", if is_valid { "VALID ✓" } else { "INVALID ✗" });
+            println!(
+                "   ✓ Verification result: {}",
+                if is_valid { "VALID ✓" } else { "INVALID ✗" }
+            );
             if is_valid {
                 println!("   ✓ Cross-verification successful!");
                 println!("   ✓ Masked signature is compatible with standard verifier");
@@ -205,7 +215,7 @@ fn security_demo() {
             return;
         }
     };
-    
+
     let sign_result = MlDsa65::sign(&sk, b"Original message that will be signed");
     let signature = match sign_result {
         Ok(sig) => sig,
@@ -214,23 +224,37 @@ fn security_demo() {
             return;
         }
     };
-    
+
     println!(" Security Tests:");
     println!("   Original signature: VALID ✓");
-    
+
     let tampered_msg = b"This message has been tampered with!";
     match MlDsa65::verify(&pk, tampered_msg, &signature) {
-        Ok(valid) => println!("    Modified message: {}", if !valid { "REJECTED ✓" } else { "ACCEPTED ✗" }),
+        Ok(valid) => println!(
+            "    Modified message: {}",
+            if !valid {
+                "REJECTED ✓"
+            } else {
+                "ACCEPTED ✗"
+            }
+        ),
         Err(e) => println!("    Modified message error: {}", e),
     }
-    
+
     let mut tampered_sig = signature.clone();
     tampered_sig[100] ^= 0xFF;
     match MlDsa65::verify(&pk, b"Original message that will be signed", &tampered_sig) {
-        Ok(valid) => println!("    Tampered signature: {}", if !valid { "REJECTED ✓" } else { "ACCEPTED ✗" }),
+        Ok(valid) => println!(
+            "    Tampered signature: {}",
+            if !valid {
+                "REJECTED ✓"
+            } else {
+                "ACCEPTED ✗"
+            }
+        ),
         Err(e) => println!("    Tampered signature error: {}", e),
     }
-    
+
     let wrong_keypair = MlDsa65::keypair();
     let (wrong_pk, _) = match wrong_keypair {
         Ok(kp) => kp,
@@ -239,11 +263,22 @@ fn security_demo() {
             return;
         }
     };
-    match MlDsa65::verify(&wrong_pk, b"Original message that will be signed", &signature) {
-        Ok(valid) => println!("    Wrong public key: {}", if !valid { "REJECTED ✓" } else { "ACCEPTED ✗" }),
+    match MlDsa65::verify(
+        &wrong_pk,
+        b"Original message that will be signed",
+        &signature,
+    ) {
+        Ok(valid) => println!(
+            "    Wrong public key: {}",
+            if !valid {
+                "REJECTED ✓"
+            } else {
+                "ACCEPTED ✗"
+            }
+        ),
         Err(e) => println!("    Wrong public key error: {}", e),
     }
-    
+
     println!("\n Security Summary:");
     println!("   ✓ Message integrity: Any change invalidates signature");
     println!("   ✓ Signature authenticity: Cannot be forged without secret key");

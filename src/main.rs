@@ -18,26 +18,24 @@ fn main() {
 
             let msg = b"FIPS 204 ML-DSA-65 self-test";
             match MlDsa65::sign(&sk, msg) {
-                Ok(sig) => {
-                    match MlDsa65::verify(&pk, msg, &sig) {
-                        Ok(true) => {
-                            println!("Sign/verify: OK");
-                            println!();
-                            println!("Implementation ready for production use.");
-                            println!("  Security Level: NIST Level 2");
-                            println!("  Signature Size: {} bytes", sig.len());
-                            println!("  Public Key Size: {} bytes", pk.len());
-                        }
-                        Ok(false) => {
-                            eprintln!("Error: Verification returned false");
-                            std::process::exit(1);
-                        }
-                        Err(e) => {
-                            eprintln!("Error during verification: {}", e);
-                            std::process::exit(1);
-                        }
+                Ok(sig) => match MlDsa65::verify(&pk, msg, &sig) {
+                    Ok(true) => {
+                        println!("Sign/verify: OK");
+                        println!();
+                        println!("Implementation ready for production use.");
+                        println!("  Security Level: NIST Level 2");
+                        println!("  Signature Size: {} bytes", sig.len());
+                        println!("  Public Key Size: {} bytes", pk.len());
                     }
-                }
+                    Ok(false) => {
+                        eprintln!("Error: Verification returned false");
+                        std::process::exit(1);
+                    }
+                    Err(e) => {
+                        eprintln!("Error during verification: {}", e);
+                        std::process::exit(1);
+                    }
+                },
                 Err(e) => {
                     eprintln!("Error during signing: {}", e);
                     std::process::exit(1);

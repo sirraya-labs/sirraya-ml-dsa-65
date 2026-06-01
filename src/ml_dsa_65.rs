@@ -32,7 +32,9 @@ pub use MlDsaError as DilithiumError;
 
 pub fn random_bytes(buf: &mut [u8]) -> Result<(), MlDsaError> {
     use rand_core::RngCore;
-    rand_core::OsRng.try_fill_bytes(buf).map_err(|_| MlDsaError::RngFailed)
+    rand_core::OsRng
+        .try_fill_bytes(buf)
+        .map_err(|_| MlDsaError::RngFailed)
 }
 
 // ---------------------------------------------------------------------------
@@ -245,25 +247,30 @@ fn w1_encode(w1: &[Poly; K]) -> [u8; K * POLYW1_PACKEDBYTES] {
 // ---------------------------------------------------------------------------
 // Algorithm 6 — ML-DSA.KeyGen_internal
 // ---------------------------------------------------------------------------
-pub fn keypair_from_seed(xi: &[u8; SEEDBYTES]) -> Result<([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]), MlDsaError> {
+pub fn keypair_from_seed(
+    xi: &[u8; SEEDBYTES],
+) -> Result<([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]), MlDsaError> {
     // FIPS 204 §6.1 Algorithm 1 step 1:
     // (ρ, ρ', K) = SHAKE-256(ξ || 0x02 || 0x00, 128)
     let mut expanded = [0u8; 128];
     {
-        use sha3::{Shake256, digest::{Update, ExtendableOutput, XofReader}};
+        use sha3::{
+            digest::{ExtendableOutput, Update, XofReader},
+            Shake256,
+        };
         let mut h = Shake256::default();
         h.update(xi);
-        h.update(&[0x02]);  // Domain separator for ML-DSA
-        h.update(&[0x00]);  // Context index for initial expansion
+        h.update(&[0x02]); // Domain separator for ML-DSA
+        h.update(&[0x00]); // Context index for initial expansion
         h.finalize_xof().read(&mut expanded);
     }
-    
+
     let mut rho = [0u8; SEEDBYTES];
     rho.copy_from_slice(&expanded[0..32]);
-    
+
     let mut rho_p = [0u8; 64];
     rho_p.copy_from_slice(&expanded[32..96]);
-    
+
     let mut cap_k = [0u8; KEYBYTES];
     cap_k.copy_from_slice(&expanded[96..128]);
 
@@ -294,18 +301,18 @@ pub fn keypair_from_seed(xi: &[u8; SEEDBYTES]) -> Result<([u8; PUBLICKEYBYTES], 
     off += KEYBYTES;
     sk[off..off + TRBYTES].copy_from_slice(&tr);
     off += TRBYTES;
-    
+
     let b = pack_s1(&s1);
     sk[off..off + b.len()].copy_from_slice(&b);
     off += b.len();
-    
+
     let b = pack_s2(&s2);
     sk[off..off + b.len()].copy_from_slice(&b);
     off += b.len();
-    
+
     let b = pack_t0(&t0);
     sk[off..off + b.len()].copy_from_slice(&b);
-    
+
     Ok((pk, sk))
 }
 
@@ -318,7 +325,11 @@ pub fn keypair() -> Result<([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]), MlDsaEr
 // ---------------------------------------------------------------------------
 // Algorithm 7 — ML-DSA.Sign_internal
 // ---------------------------------------------------------------------------
-pub fn sign_internal(sk: &[u8; SECRETKEYBYTES], msg_prime: &[u8], rnd: &[u8; RNDBYTES]) -> Result<[u8; SIGNBYTES], MlDsaError> {
+pub fn sign_internal(
+    sk: &[u8; SECRETKEYBYTES],
+    msg_prime: &[u8],
+    rnd: &[u8; RNDBYTES],
+) -> Result<[u8; SIGNBYTES], MlDsaError> {
     let mut off = 0;
     let mut rho = [0u8; SEEDBYTES];
     rho.copy_from_slice(&sk[off..off + SEEDBYTES]);
@@ -464,7 +475,10 @@ pub fn sign(sk: &[u8; SECRETKEYBYTES], msg: &[u8]) -> Result<[u8; SIGNBYTES], Ml
     sign_internal(sk, &mp, &rnd)
 }
 
-pub fn sign_deterministic(sk: &[u8; SECRETKEYBYTES], msg: &[u8]) -> Result<[u8; SIGNBYTES], MlDsaError> {
+pub fn sign_deterministic(
+    sk: &[u8; SECRETKEYBYTES],
+    msg: &[u8],
+) -> Result<[u8; SIGNBYTES], MlDsaError> {
     let mut mp = Vec::with_capacity(2 + msg.len());
     mp.push(0u8);
     mp.push(0u8);
@@ -475,7 +489,11 @@ pub fn sign_deterministic(sk: &[u8; SECRETKEYBYTES], msg: &[u8]) -> Result<[u8; 
 // ---------------------------------------------------------------------------
 // Algorithm 8 — ML-DSA.Verify_internal
 // ---------------------------------------------------------------------------
-pub fn verify_internal(pk: &[u8; PUBLICKEYBYTES], msg_prime: &[u8], sig: &[u8; SIGNBYTES]) -> Result<bool, MlDsaError> {
+pub fn verify_internal(
+    pk: &[u8; PUBLICKEYBYTES],
+    msg_prime: &[u8],
+    sig: &[u8; SIGNBYTES],
+) -> Result<bool, MlDsaError> {
     let mut rho = [0u8; SEEDBYTES];
     rho.copy_from_slice(&pk[..SEEDBYTES]);
     let t1 = unpack_t1(&pk[SEEDBYTES..]);
@@ -547,7 +565,11 @@ pub fn verify_internal(pk: &[u8; PUBLICKEYBYTES], msg_prime: &[u8], sig: &[u8; S
 // ---------------------------------------------------------------------------
 // Algorithm 3 — ML-DSA.Verify (external)
 // ---------------------------------------------------------------------------
-pub fn verify(pk: &[u8; PUBLICKEYBYTES], msg: &[u8], sig: &[u8; SIGNBYTES]) -> Result<bool, MlDsaError> {
+pub fn verify(
+    pk: &[u8; PUBLICKEYBYTES],
+    msg: &[u8],
+    sig: &[u8; SIGNBYTES],
+) -> Result<bool, MlDsaError> {
     let mut mp = Vec::with_capacity(2 + msg.len());
     mp.push(0u8);
     mp.push(0u8);
@@ -563,16 +585,25 @@ impl MlDsa65 {
     pub fn keypair() -> Result<([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]), MlDsaError> {
         keypair()
     }
-    pub fn keypair_from_seed(xi: &[u8; SEEDBYTES]) -> Result<([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]), MlDsaError> {
+    pub fn keypair_from_seed(
+        xi: &[u8; SEEDBYTES],
+    ) -> Result<([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]), MlDsaError> {
         keypair_from_seed(xi)
     }
     pub fn sign(sk: &[u8; SECRETKEYBYTES], msg: &[u8]) -> Result<[u8; SIGNBYTES], MlDsaError> {
         sign(sk, msg)
     }
-    pub fn sign_deterministic(sk: &[u8; SECRETKEYBYTES], msg: &[u8]) -> Result<[u8; SIGNBYTES], MlDsaError> {
+    pub fn sign_deterministic(
+        sk: &[u8; SECRETKEYBYTES],
+        msg: &[u8],
+    ) -> Result<[u8; SIGNBYTES], MlDsaError> {
         sign_deterministic(sk, msg)
     }
-    pub fn verify(pk: &[u8; PUBLICKEYBYTES], msg: &[u8], sig: &[u8; SIGNBYTES]) -> Result<bool, MlDsaError> {
+    pub fn verify(
+        pk: &[u8; PUBLICKEYBYTES],
+        msg: &[u8],
+        sig: &[u8; SIGNBYTES],
+    ) -> Result<bool, MlDsaError> {
         verify(pk, msg, sig)
     }
     pub const PK_BYTES: usize = PUBLICKEYBYTES;
@@ -590,10 +621,17 @@ pub use MlDsa65 as Dilithium5;
 pub mod diagnostic {
     use super::*;
 
-    pub fn inspect_keypair(pk: &[u8; PUBLICKEYBYTES], sk: &[u8; SECRETKEYBYTES]) -> Result<(), MlDsaError> {
-        println!("\n================================================================================");
+    pub fn inspect_keypair(
+        pk: &[u8; PUBLICKEYBYTES],
+        sk: &[u8; SECRETKEYBYTES],
+    ) -> Result<(), MlDsaError> {
+        println!(
+            "\n================================================================================"
+        );
         println!("           ML-DSA-65 LATTICE COMPONENTS (REAL DATA)");
-        println!("================================================================================\n");
+        println!(
+            "================================================================================\n"
+        );
 
         let mut rho = [0u8; SEEDBYTES];
         rho.copy_from_slice(&pk[..SEEDBYTES]);
@@ -622,7 +660,10 @@ pub mod diagnostic {
         println!();
 
         println!("PUBLIC KEY COMPONENTS:");
-        println!("   |- rho (seed for matrix A):      {:02x?}{:02x?}{:02x?}...", &rho[0], &rho[1], &rho[2]);
+        println!(
+            "   |- rho (seed for matrix A):      {:02x?}{:02x?}{:02x?}...",
+            &rho[0], &rho[1], &rho[2]
+        );
         println!("   \\- t1 (high bits of t = A*s1 + s2):");
 
         for i in 0..K.min(3) {
@@ -637,9 +678,18 @@ pub mod diagnostic {
         }
 
         println!("\nSECRET KEY COMPONENTS:");
-        println!("   |- rho (same as public):          {:02x?}{:02x?}{:02x?}...", &rho_sk[0], &rho_sk[1], &rho_sk[2]);
-        println!("   |- K (key material):            {:02x?}{:02x?}{:02x?}...", &cap_k[0], &cap_k[1], &cap_k[2]);
-        println!("   |- tr (hash of public key):     {:02x?}{:02x?}{:02x?}...", &tr[0], &tr[1], &tr[2]);
+        println!(
+            "   |- rho (same as public):          {:02x?}{:02x?}{:02x?}...",
+            &rho_sk[0], &rho_sk[1], &rho_sk[2]
+        );
+        println!(
+            "   |- K (key material):            {:02x?}{:02x?}{:02x?}...",
+            &cap_k[0], &cap_k[1], &cap_k[2]
+        );
+        println!(
+            "   |- tr (hash of public key):     {:02x?}{:02x?}{:02x?}...",
+            &tr[0], &tr[1], &tr[2]
+        );
 
         println!("   |- s1 (secret vector 1, eta=2 bounded):");
         for i in 0..L.min(3) {
@@ -694,9 +744,15 @@ pub mod diagnostic {
             for j in 0..3.min(N) {
                 let t_expected = (t1[i].coeffs[j] << D) + t0[i].coeffs[j];
                 let t_actual = t_verify[i].coeffs[j];
-                if t_expected != t_actual && t_expected != t_actual + Q && t_expected != t_actual - Q {
+                if t_expected != t_actual
+                    && t_expected != t_actual + Q
+                    && t_expected != t_actual - Q
+                {
                     matches = false;
-                    println!("   MISMATCH at t[{}][{}]: expected={} actual={}", i, j, t_expected, t_actual);
+                    println!(
+                        "   MISMATCH at t[{}][{}]: expected={} actual={}",
+                        i, j, t_expected, t_actual
+                    );
                 }
             }
         }
@@ -709,9 +765,13 @@ pub mod diagnostic {
     }
 
     pub fn inspect_signature(sig: &[u8; SIGNBYTES]) -> Result<(), MlDsaError> {
-        println!("\n================================================================================");
+        println!(
+            "\n================================================================================"
+        );
         println!("              ML-DSA-65 SIGNATURE COMPONENTS");
-        println!("================================================================================\n");
+        println!(
+            "================================================================================\n"
+        );
 
         let mut soff = 0;
         let mut c_tilde = [0u8; CTILDEBYTES];
@@ -726,7 +786,10 @@ pub mod diagnostic {
         let h = hint_unpack(&hbuf).unwrap_or([Poly::zero(); K]);
 
         println!("SIGNATURE COMPONENTS:");
-        println!("   |- c~ (challenge hash):      {:02x?}{:02x?}{:02x?}... ({} bytes)", &c_tilde[0], &c_tilde[1], &c_tilde[2], CTILDEBYTES);
+        println!(
+            "   |- c~ (challenge hash):      {:02x?}{:02x?}{:02x?}... ({} bytes)",
+            &c_tilde[0], &c_tilde[1], &c_tilde[2], CTILDEBYTES
+        );
 
         println!("   |- z (response vector, bounded by gamma1 = {}):", GAMMA1);
         for i in 0..L.min(3) {
@@ -740,8 +803,15 @@ pub mod diagnostic {
             println!(" ...]");
         }
 
-        let hint_count = h.iter().flat_map(|p| p.coeffs.iter()).filter(|&&c| c != 0).count();
-        println!("   \\- h (hint bits):            {} non-zero hints (max {})", hint_count, OMEGA);
+        let hint_count = h
+            .iter()
+            .flat_map(|p| p.coeffs.iter())
+            .filter(|&&c| c != 0)
+            .count();
+        println!(
+            "   \\- h (hint bits):            {} non-zero hints (max {})",
+            hint_count, OMEGA
+        );
 
         if hint_count > 0 {
             println!("      First few hint positions:");
@@ -776,9 +846,13 @@ pub mod diagnostic {
     }
 
     pub fn demonstrate_lattice() -> Result<(), MlDsaError> {
-        println!("\n================================================================================");
+        println!(
+            "\n================================================================================"
+        );
         println!("         REAL LATTICE-BASED CRYPTOGRAPHY DEMONSTRATION");
-        println!("================================================================================\n");
+        println!(
+            "================================================================================\n"
+        );
 
         let (pk, sk) = keypair()?;
         inspect_keypair(&pk, &sk)?;
@@ -788,7 +862,10 @@ pub mod diagnostic {
         inspect_signature(&sig)?;
 
         let valid = verify(&pk, msg, &sig)?;
-        println!("\nSIGNATURE VERIFICATION: {}", if valid { "SUCCESS" } else { "FAILED" });
+        println!(
+            "\nSIGNATURE VERIFICATION: {}",
+            if valid { "SUCCESS" } else { "FAILED" }
+        );
 
         println!("\nLATTICE NORM BOUNDS:");
         println!("   ||s1||_inf <= eta = {}", ETA);
@@ -798,9 +875,15 @@ pub mod diagnostic {
         println!("   ||c*t0||_inf <= gamma2 = {}", GAMMA2);
 
         println!("\nThis demonstrates real ML-DSA-65 lattice cryptography:");
-        println!("   * Polynomials in the ring R_q = Z_q[x]/(x^n+1) with n={}", N);
+        println!(
+            "   * Polynomials in the ring R_q = Z_q[x]/(x^n+1) with n={}",
+            N
+        );
         println!("   * Module lattice of rank k={}, l={}", K, L);
-        println!("   * Small secrets drawn from bounded distribution (eta={})", ETA);
+        println!(
+            "   * Small secrets drawn from bounded distribution (eta={})",
+            ETA
+        );
         println!("   * Rejection sampling ensures zero-knowledge");
         println!("   * Hints enable efficient decompression");
 
@@ -865,7 +948,10 @@ pub fn run_tests() -> Result<(), MlDsaError> {
     }
     println!("PASS");
 
-    assert!(!verify(&pk, b"tampered", &sig)?, "should reject wrong message");
+    assert!(
+        !verify(&pk, b"tampered", &sig)?,
+        "should reject wrong message"
+    );
 
     println!("\n[6/6] Lattice Demonstration ...");
     if let Err(e) = diagnostic::demonstrate_lattice() {

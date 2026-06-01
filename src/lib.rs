@@ -1,6 +1,6 @@
 // src/lib.rs
 //! ML-DSA-65 Post-Quantum Cryptography Implementation (FIPS 204)
-//! 
+//!
 //!
 //! This crate provides two versions:
 //! - Standard implementation (in `ml_dsa_65` module) - Fast, unmasked ML-DSA-65
@@ -8,9 +8,9 @@
 //!   (kept for legacy compatibility)
 
 pub mod constants;
-pub mod polynomial;
-pub mod ml_dsa_65;
 pub mod dilithium_masked;
+pub mod ml_dsa_65;
+pub mod polynomial;
 
 // Re-export ML-DSA-65 as the default
 pub use ml_dsa_65::MlDsa65;
@@ -25,14 +25,14 @@ pub mod rdfc;
 #[cfg(feature = "w3c")]
 pub use rdfc::{
     // Public API - what users should actually use
-    canonicalize, 
-    parse_nquads, 
-    Quad, 
-    Term, 
+    canonicalize,
+    parse_nquads,
     IdentifierIssuer,
     // Remove these private functions:
     // hash_first_degree_quads,
     // hash_n_degree_quads,
+    Quad,
+    Term,
 };
 
 // VC Verifier module - JCS-based verification

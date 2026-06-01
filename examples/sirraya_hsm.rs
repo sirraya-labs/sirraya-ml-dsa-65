@@ -11,13 +11,13 @@ use core::fmt;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::thread;
 use std::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use aes_gcm::{
-    aead::{Aead, OsRng},
     aead::rand_core::RngCore,
+    aead::{Aead, OsRng},
     AeadCore, Aes256Gcm, Key, KeyInit, Nonce,
 };
 use dilithium5::Dilithium5;
@@ -74,9 +74,13 @@ pub struct HSMError {
 
 impl HSMError {
     pub const fn new(code: HSMErrorCode, message: &'static str) -> Self {
-        Self { code, message, context: None }
+        Self {
+            code,
+            message,
+            context: None,
+        }
     }
-    
+
     pub fn with_context(mut self, context: String) -> Self {
         self.context = Some(context);
         self
@@ -183,7 +187,12 @@ pub struct KeyUsage {
 
 impl Default for KeyUsage {
     fn default() -> Self {
-        Self { encrypt: true, decrypt: true, sign: true, verify: true }
+        Self {
+            encrypt: true,
+            decrypt: true,
+            sign: true,
+            verify: true,
+        }
     }
 }
 
@@ -331,12 +340,12 @@ impl Session {
             quota: AtomicU64::new(10000),
         }
     }
-    
+
     #[inline]
     fn is_valid(&self) -> bool {
         now_secs() - self.created < SESSION_TIMEOUT_SECS
     }
-    
+
     #[inline]
     fn consume(&self) -> bool {
         self.quota.fetch_sub(1, Ordering::Relaxed) > 0
@@ -345,7 +354,10 @@ impl Session {
 
 #[inline(always)]
 fn now_secs() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
 }
 
 // ============================================================================
@@ -363,11 +375,11 @@ impl TamperDetector {
             tampered: Arc::new(AtomicBool::new(false)),
         }
     }
-    
+
     pub fn check(&self) -> bool {
         false
     }
-    
+
     #[inline]
     pub fn is_tampered(&self) -> bool {
         self.tampered.load(Ordering::Relaxed)
@@ -396,81 +408,100 @@ impl DilithiumAesProvider {
 impl CryptoProvider for DilithiumAesProvider {
     fn generate_keypair(&self, ty: KeyType) -> Result<(Vec<u8>, Vec<u8>)> {
         match ty {
-            KeyType::Dilithium5 | KeyType::HybridAesDilithium => {
-                Dilithium5::keypair()
-                    .map(|(pk, sk)| (pk.to_vec(), sk.to_vec()))
-                    .map_err(|e| HSMError::new(HSMErrorCode::Crypto, "Keygen failed")
-                        .with_context(e.to_string()))
-            }
-            _ => Err(HSMError::new(HSMErrorCode::InvalidKeyType, "Invalid key type")),
+            KeyType::Dilithium5 | KeyType::HybridAesDilithium => Dilithium5::keypair()
+                .map(|(pk, sk)| (pk.to_vec(), sk.to_vec()))
+                .map_err(|e| {
+                    HSMError::new(HSMErrorCode::Crypto, "Keygen failed").with_context(e.to_string())
+                }),
+            _ => Err(HSMError::new(
+                HSMErrorCode::InvalidKeyType,
+                "Invalid key type",
+            )),
         }
     }
-    
+
     fn sign(&self, key: &[u8], data: &[u8]) -> Result<Vec<u8>> {
         if key.len() != DILITHIUM_SECRETKEYBYTES {
-            return Err(HSMError::new(HSMErrorCode::InvalidKeyLength, "Invalid secret key length"));
+            return Err(HSMError::new(
+                HSMErrorCode::InvalidKeyLength,
+                "Invalid secret key length",
+            ));
         }
-        
+
         let mut k = [0u8; DILITHIUM_SECRETKEYBYTES];
         k.copy_from_slice(key);
-        
-        Dilithium5::sign(&k, data)
-            .map(|s| s.to_vec())
-            .map_err(|e| HSMError::new(HSMErrorCode::Crypto, "Sign failed")
-                .with_context(e.to_string()))
+
+        Dilithium5::sign(&k, data).map(|s| s.to_vec()).map_err(|e| {
+            HSMError::new(HSMErrorCode::Crypto, "Sign failed").with_context(e.to_string())
+        })
     }
-    
+
     fn verify(&self, pk: &[u8], data: &[u8], sig: &[u8]) -> Result<bool> {
         if pk.len() != DILITHIUM_PUBLICKEYBYTES {
-            return Err(HSMError::new(HSMErrorCode::InvalidKeyLength, "Invalid public key length"));
+            return Err(HSMError::new(
+                HSMErrorCode::InvalidKeyLength,
+                "Invalid public key length",
+            ));
         }
         if sig.len() != DILITHIUM_SIGNBYTES {
-            return Err(HSMError::new(HSMErrorCode::InvalidKeyLength, "Invalid signature length"));
+            return Err(HSMError::new(
+                HSMErrorCode::InvalidKeyLength,
+                "Invalid signature length",
+            ));
         }
-        
+
         let mut p = [0u8; DILITHIUM_PUBLICKEYBYTES];
         let mut s = [0u8; DILITHIUM_SIGNBYTES];
         p.copy_from_slice(pk);
         s.copy_from_slice(sig);
-        
-        Dilithium5::verify(&p, data, &s)
-            .map_err(|e| HSMError::new(HSMErrorCode::Crypto, "Verify failed")
-                .with_context(e.to_string()))
+
+        Dilithium5::verify(&p, data, &s).map_err(|e| {
+            HSMError::new(HSMErrorCode::Crypto, "Verify failed").with_context(e.to_string())
+        })
     }
-    
+
     fn encrypt(&self, key: &[u8], plain: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
         if key.len() != 32 {
-            return Err(HSMError::new(HSMErrorCode::InvalidKeyLength, "Invalid AES key length"));
+            return Err(HSMError::new(
+                HSMErrorCode::InvalidKeyLength,
+                "Invalid AES key length",
+            ));
         }
-        
+
         let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
         let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-        
-        cipher.encrypt(&nonce, plain)
+
+        cipher
+            .encrypt(&nonce, plain)
             .map(|c| (c, nonce.to_vec()))
-            .map_err(|e| HSMError::new(HSMErrorCode::Crypto, "Encrypt failed")
-                .with_context(format!("{:?}", e)))
+            .map_err(|e| {
+                HSMError::new(HSMErrorCode::Crypto, "Encrypt failed")
+                    .with_context(format!("{:?}", e))
+            })
     }
-    
+
     fn decrypt(&self, key: &[u8], ciphertext: &[u8], nonce: &[u8]) -> Result<Vec<u8>> {
         if key.len() != 32 {
-            return Err(HSMError::new(HSMErrorCode::InvalidKeyLength, "Invalid AES key length"));
+            return Err(HSMError::new(
+                HSMErrorCode::InvalidKeyLength,
+                "Invalid AES key length",
+            ));
         }
-        
+
         let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
         let nonce = Nonce::from_slice(nonce);
-        
-        cipher.decrypt(nonce, ciphertext)
-            .map_err(|e| HSMError::new(HSMErrorCode::Crypto, "Decrypt failed")
-                .with_context(format!("{:?}", e)))
+
+        cipher.decrypt(nonce, ciphertext).map_err(|e| {
+            HSMError::new(HSMErrorCode::Crypto, "Decrypt failed").with_context(format!("{:?}", e))
+        })
     }
-    
+
     fn random_bytes(&self, len: usize) -> Vec<u8> {
         let mut buf = vec![0u8; len];
         OsRng.fill_bytes(&mut buf);
         buf
     }
-    
+
     fn info(&self) -> ProviderInfo {
         ProviderInfo {
             name: "Dilithium5-AES256".to_string(),
@@ -508,54 +539,71 @@ impl Default for MemoryStorage {
 
 impl SecureStorage for MemoryStorage {
     fn store_key(&self, id: &str, key: KeyMaterial) -> Result<()> {
-        let mut keys = self.keys.write()
+        let mut keys = self
+            .keys
+            .write()
             .map_err(|_| HSMError::new(HSMErrorCode::LockPoisoned, "RwLock poisoned"))?;
-        
+
         if keys.len() >= self.capacity {
             return Err(HSMError::new(HSMErrorCode::MaxSessions, "Key store full"));
         }
-        
+
         keys.insert(id.to_string(), key);
         Ok(())
     }
-    
+
     fn get_key(&self, id: &str) -> Result<KeyMaterial> {
-        let keys = self.keys.read()
+        let keys = self
+            .keys
+            .read()
             .map_err(|_| HSMError::new(HSMErrorCode::LockPoisoned, "RwLock poisoned"))?;
-        
+
         keys.get(id)
-            .map(|k| KeyMaterial::new(
-                k.id.clone(),
-                k.ty.clone(),
-                k.public.clone(),
-                k.private.clone(),
-                k.symmetric.clone(),
-                k.attrs.clone(),
-                k.created,
-            ))
-            .ok_or_else(|| HSMError::new(HSMErrorCode::KeyNotFound, "Key not found")
-                .with_context(id.to_string()))
+            .map(|k| {
+                KeyMaterial::new(
+                    k.id.clone(),
+                    k.ty.clone(),
+                    k.public.clone(),
+                    k.private.clone(),
+                    k.symmetric.clone(),
+                    k.attrs.clone(),
+                    k.created,
+                )
+            })
+            .ok_or_else(|| {
+                HSMError::new(HSMErrorCode::KeyNotFound, "Key not found")
+                    .with_context(id.to_string())
+            })
     }
-    
+
     fn delete_key(&self, id: &str) -> Result<()> {
-        let mut keys = self.keys.write()
+        let mut keys = self
+            .keys
+            .write()
             .map_err(|_| HSMError::new(HSMErrorCode::LockPoisoned, "RwLock poisoned"))?;
-        
+
         keys.remove(id);
         Ok(())
     }
-    
+
     fn list_keys(&self) -> Result<Vec<String>> {
-        let keys = self.keys.read()
+        let keys = self
+            .keys
+            .read()
             .map_err(|_| HSMError::new(HSMErrorCode::LockPoisoned, "RwLock poisoned"))?;
-        
+
         Ok(keys.keys().cloned().collect())
     }
-    
+
     fn metrics(&self) -> StorageMetrics {
         let keys = match self.keys.read() {
             Ok(keys) => keys,
-            Err(_) => return StorageMetrics { total_keys: 0, max_capacity: self.capacity },
+            Err(_) => {
+                return StorageMetrics {
+                    total_keys: 0,
+                    max_capacity: self.capacity,
+                }
+            }
         };
         StorageMetrics {
             total_keys: keys.len(),
@@ -582,17 +630,17 @@ impl EntropySource for OsEntropy {
         OsRng.fill_bytes(dest);
         Ok(())
     }
-    
+
     fn is_healthy(&self) -> bool {
         true
     }
-    
+
     fn reseed(&self) -> Result<()> {
         let mut buf = [0u8; 64];
         OsRng.fill_bytes(&mut buf);
         Ok(())
     }
-    
+
     fn info(&self) -> EntropyInfo {
         EntropyInfo {
             source: "OS RNG".to_string(),
@@ -684,19 +732,23 @@ where
             tamper: TamperDetector::new(),
             sessions: Arc::new(Mutex::new(Vec::with_capacity(MAX_SESSIONS))),
             metrics: Arc::new(HsmMetrics::new()),
-            state: (AtomicBool::new(true), AtomicBool::new(true), AtomicBool::new(false)),
+            state: (
+                AtomicBool::new(true),
+                AtomicBool::new(true),
+                AtomicBool::new(false),
+            ),
         }
     }
-    
+
     pub fn start_tamper_monitoring(&self) {
         let tamper = self.tamper.clone();
         let metrics = self.metrics.clone();
         let state_running = Arc::new(AtomicBool::new(true));
         let state_running_clone = state_running.clone();
-        
+
         thread::spawn(move || {
             let start = now_secs();
-            
+
             while state_running_clone.load(Ordering::Relaxed) {
                 if tamper.check() {
                     metrics.tamper.fetch_add(1, Ordering::Relaxed);
@@ -706,41 +758,50 @@ where
             }
         });
     }
-    
+
     pub fn create_session(&self, ctx: SessionContext) -> Result<SessionId> {
         self.check_state()?;
         self.check_tamper()?;
-        
-        let mut sessions = self.sessions.lock()
+
+        let mut sessions = self
+            .sessions
+            .lock()
             .map_err(|_| HSMError::new(HSMErrorCode::LockPoisoned, "Mutex poisoned"))?;
-        
+
         sessions.retain(Session::is_valid);
-        
+
         if sessions.len() >= MAX_SESSIONS {
-            return Err(HSMError::new(HSMErrorCode::MaxSessions, "Max sessions reached"));
+            return Err(HSMError::new(
+                HSMErrorCode::MaxSessions,
+                "Max sessions reached",
+            ));
         }
-        
+
         let session = Session::new(ctx);
         let id = session.id.clone();
         sessions.push(session);
         self.metrics.sessions.fetch_add(1, Ordering::Relaxed);
-        
+
         Ok(id)
     }
-    
+
     pub fn close_session(&self, id: &SessionId) -> Result<()> {
-        let mut sessions = self.sessions.lock()
+        let mut sessions = self
+            .sessions
+            .lock()
             .map_err(|_| HSMError::new(HSMErrorCode::LockPoisoned, "Mutex poisoned"))?;
-        
+
         if let Some(pos) = sessions.iter().position(|s| s.id == *id) {
             sessions.remove(pos);
             Ok(())
         } else {
-            Err(HSMError::new(HSMErrorCode::InvalidSession, "Session not found")
-                .with_context(id.0.clone()))
+            Err(
+                HSMError::new(HSMErrorCode::InvalidSession, "Session not found")
+                    .with_context(id.0.clone()),
+            )
         }
     }
-    
+
     pub fn generate_key(
         &self,
         sid: &SessionId,
@@ -750,12 +811,12 @@ where
         self.check_state()?;
         self.verify_session(sid)?;
         self.check_tamper()?;
-        
+
         self.metrics.total_ops.fetch_add(1, Ordering::Relaxed);
-        
+
         let id = Uuid::new_v4().to_string();
         let now = now_secs();
-        
+
         let (pub_key, priv_key) = match &ty {
             KeyType::Dilithium5 | KeyType::HybridAesDilithium => {
                 let (pk, sk) = self.provider.generate_keypair(ty.clone())?;
@@ -763,32 +824,30 @@ where
             }
             _ => (None, None),
         };
-        
+
         let sym_key = match &ty {
-            KeyType::Aes256 | KeyType::HybridAesDilithium => {
-                Some(self.provider.random_bytes(32))
-            }
+            KeyType::Aes256 | KeyType::HybridAesDilithium => Some(self.provider.random_bytes(32)),
             _ => None,
         };
-        
+
         let key = KeyMaterial::new(id.clone(), ty, pub_key, priv_key, sym_key, attrs, now);
-        
+
         self.storage.store_key(&id, key)?;
         self.metrics.key_gen.fetch_add(1, Ordering::Relaxed);
         self.metrics.success_ops.fetch_add(1, Ordering::Relaxed);
-        
+
         Ok(KeyHandle(id))
     }
-    
+
     pub fn sign(&self, sid: &SessionId, key: &KeyHandle, data: &[u8]) -> Result<Vec<u8>> {
         self.check_state()?;
         self.verify_session(sid)?;
         self.check_tamper()?;
-        
+
         self.metrics.total_ops.fetch_add(1, Ordering::Relaxed);
-        
+
         let key = self.storage.get_key(&key.0)?;
-        
+
         match key.private {
             Some(ref sk) => {
                 let sig = self.provider.sign(sk, data)?;
@@ -796,18 +855,27 @@ where
                 self.metrics.success_ops.fetch_add(1, Ordering::Relaxed);
                 Ok(sig)
             }
-            None => Err(HSMError::new(HSMErrorCode::OpNotPermitted, "Key cannot sign")),
+            None => Err(HSMError::new(
+                HSMErrorCode::OpNotPermitted,
+                "Key cannot sign",
+            )),
         }
     }
-    
-    pub fn verify(&self, sid: &SessionId, key: &KeyHandle, data: &[u8], sig: &[u8]) -> Result<bool> {
+
+    pub fn verify(
+        &self,
+        sid: &SessionId,
+        key: &KeyHandle,
+        data: &[u8],
+        sig: &[u8],
+    ) -> Result<bool> {
         self.check_state()?;
         self.verify_session(sid)?;
-        
+
         self.metrics.total_ops.fetch_add(1, Ordering::Relaxed);
-        
+
         let key = self.storage.get_key(&key.0)?;
-        
+
         match key.public {
             Some(ref pk) => {
                 let ok = self.provider.verify(pk, data, sig)?;
@@ -815,19 +883,27 @@ where
                 self.metrics.success_ops.fetch_add(1, Ordering::Relaxed);
                 Ok(ok)
             }
-            None => Err(HSMError::new(HSMErrorCode::OpNotPermitted, "Key cannot verify")),
+            None => Err(HSMError::new(
+                HSMErrorCode::OpNotPermitted,
+                "Key cannot verify",
+            )),
         }
     }
-    
-    pub fn encrypt(&self, sid: &SessionId, key: &KeyHandle, plain: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+
+    pub fn encrypt(
+        &self,
+        sid: &SessionId,
+        key: &KeyHandle,
+        plain: &[u8],
+    ) -> Result<(Vec<u8>, Vec<u8>)> {
         self.check_state()?;
         self.verify_session(sid)?;
         self.check_tamper()?;
-        
+
         self.metrics.total_ops.fetch_add(1, Ordering::Relaxed);
-        
+
         let key = self.storage.get_key(&key.0)?;
-        
+
         match key.symmetric {
             Some(ref sym) => {
                 let (cipher, nonce) = self.provider.encrypt(sym, plain)?;
@@ -835,19 +911,28 @@ where
                 self.metrics.success_ops.fetch_add(1, Ordering::Relaxed);
                 Ok((cipher, nonce))
             }
-            None => Err(HSMError::new(HSMErrorCode::OpNotPermitted, "Key cannot encrypt")),
+            None => Err(HSMError::new(
+                HSMErrorCode::OpNotPermitted,
+                "Key cannot encrypt",
+            )),
         }
     }
-    
-    pub fn decrypt(&self, sid: &SessionId, key: &KeyHandle, cipher: &[u8], nonce: &[u8]) -> Result<Vec<u8>> {
+
+    pub fn decrypt(
+        &self,
+        sid: &SessionId,
+        key: &KeyHandle,
+        cipher: &[u8],
+        nonce: &[u8],
+    ) -> Result<Vec<u8>> {
         self.check_state()?;
         self.verify_session(sid)?;
         self.check_tamper()?;
-        
+
         self.metrics.total_ops.fetch_add(1, Ordering::Relaxed);
-        
+
         let key = self.storage.get_key(&key.0)?;
-        
+
         match key.symmetric {
             Some(ref sym) => {
                 let plain = self.provider.decrypt(sym, cipher, nonce)?;
@@ -855,16 +940,19 @@ where
                 self.metrics.success_ops.fetch_add(1, Ordering::Relaxed);
                 Ok(plain)
             }
-            None => Err(HSMError::new(HSMErrorCode::OpNotPermitted, "Key cannot decrypt")),
+            None => Err(HSMError::new(
+                HSMErrorCode::OpNotPermitted,
+                "Key cannot decrypt",
+            )),
         }
     }
-    
+
     pub fn delete_key(&self, sid: &SessionId, key: &KeyHandle) -> Result<()> {
         self.check_state()?;
         self.verify_session(sid)?;
         self.storage.delete_key(&key.0)
     }
-    
+
     pub fn attest(&self) -> Attestation {
         Attestation {
             serial: HSM_SERIAL.to_string(),
@@ -876,12 +964,10 @@ where
             tampered: self.tamper.is_tampered(),
         }
     }
-    
+
     pub fn metrics(&self) -> Value {
-        let sessions_len = self.sessions.lock()
-            .map(|s| s.len())
-            .unwrap_or(0);
-        
+        let sessions_len = self.sessions.lock().map(|s| s.len()).unwrap_or(0);
+
         json!({
             "hsm": {
                 "serial": HSM_SERIAL,
@@ -910,11 +996,14 @@ where
             "tamper": self.metrics.tamper.load(Ordering::Relaxed),
         })
     }
-    
+
     #[inline]
     fn check_state(&self) -> Result<()> {
         if !self.state.0.load(Ordering::Relaxed) {
-            return Err(HSMError::new(HSMErrorCode::NotInitialized, "HSM not initialized"));
+            return Err(HSMError::new(
+                HSMErrorCode::NotInitialized,
+                "HSM not initialized",
+            ));
         }
         if !self.state.1.load(Ordering::Relaxed) {
             return Err(HSMError::new(HSMErrorCode::TamperDetected, "HSM tampered"));
@@ -924,30 +1013,44 @@ where
         }
         Ok(())
     }
-    
+
     #[inline]
     fn check_tamper(&self) -> Result<()> {
         if self.tamper.is_tampered() {
             self.state.1.store(false, Ordering::SeqCst);
-            Err(HSMError::new(HSMErrorCode::TamperDetected, "Tamper detected"))
+            Err(HSMError::new(
+                HSMErrorCode::TamperDetected,
+                "Tamper detected",
+            ))
         } else {
             Ok(())
         }
     }
-    
+
     fn verify_session(&self, id: &SessionId) -> Result<()> {
-        let sessions = self.sessions.lock()
+        let sessions = self
+            .sessions
+            .lock()
             .map_err(|_| HSMError::new(HSMErrorCode::LockPoisoned, "Mutex poisoned"))?;
-        
-        sessions.iter()
+
+        sessions
+            .iter()
             .find(|s| s.id == *id)
-            .ok_or_else(|| HSMError::new(HSMErrorCode::InvalidSession, "Invalid session")
-                .with_context(id.0.clone()))
+            .ok_or_else(|| {
+                HSMError::new(HSMErrorCode::InvalidSession, "Invalid session")
+                    .with_context(id.0.clone())
+            })
             .and_then(|s| {
                 if !s.is_valid() {
-                    Err(HSMError::new(HSMErrorCode::SessionExpired, "Session expired"))
+                    Err(HSMError::new(
+                        HSMErrorCode::SessionExpired,
+                        "Session expired",
+                    ))
                 } else if !s.consume() {
-                    Err(HSMError::new(HSMErrorCode::SessionQuota, "Session quota exceeded"))
+                    Err(HSMError::new(
+                        HSMErrorCode::SessionQuota,
+                        "Session quota exceeded",
+                    ))
                 } else {
                     Ok(())
                 }
@@ -985,7 +1088,11 @@ pub struct HsmBuilder<P, S, E> {
 
 impl Default for HsmBuilder<(), (), ()> {
     fn default() -> Self {
-        Self { p: None, s: None, e: None }
+        Self {
+            p: None,
+            s: None,
+            e: None,
+        }
     }
 }
 
@@ -997,15 +1104,27 @@ impl HsmBuilder<(), (), ()> {
 
 impl<P, S, E> HsmBuilder<P, S, E> {
     pub fn with_provider<P2>(self, p: P2) -> HsmBuilder<P2, S, E> {
-        HsmBuilder { p: Some(p), s: self.s, e: self.e }
+        HsmBuilder {
+            p: Some(p),
+            s: self.s,
+            e: self.e,
+        }
     }
-    
+
     pub fn with_storage<S2>(self, s: S2) -> HsmBuilder<P, S2, E> {
-        HsmBuilder { p: self.p, s: Some(s), e: self.e }
+        HsmBuilder {
+            p: self.p,
+            s: Some(s),
+            e: self.e,
+        }
     }
-    
+
     pub fn with_entropy<E2>(self, e: E2) -> HsmBuilder<P, S, E2> {
-        HsmBuilder { p: self.p, s: self.s, e: Some(e) }
+        HsmBuilder {
+            p: self.p,
+            s: self.s,
+            e: Some(e),
+        }
     }
 }
 
@@ -1017,9 +1136,12 @@ where
 {
     pub fn build(self) -> Result<GenericHsm<P, S, E>> {
         Ok(GenericHsm::new(
-            self.p.ok_or_else(|| HSMError::new(HSMErrorCode::Crypto, "No provider"))?,
-            self.s.ok_or_else(|| HSMError::new(HSMErrorCode::Crypto, "No storage"))?,
-            self.e.ok_or_else(|| HSMError::new(HSMErrorCode::Crypto, "No entropy"))?,
+            self.p
+                .ok_or_else(|| HSMError::new(HSMErrorCode::Crypto, "No provider"))?,
+            self.s
+                .ok_or_else(|| HSMError::new(HSMErrorCode::Crypto, "No storage"))?,
+            self.e
+                .ok_or_else(|| HSMError::new(HSMErrorCode::Crypto, "No entropy"))?,
         ))
     }
 }
@@ -1033,49 +1155,64 @@ fn main() -> Result<()> {
     println!("Serial: {}", HSM_SERIAL);
     println!("Status: PRODUCTION READY");
     println!("{}", "-".repeat(64));
-    
+
     let hsm = HsmBuilder::new()
         .with_provider(DilithiumAesProvider::new())
         .with_storage(MemoryStorage::new())
         .with_entropy(OsEntropy::new())
         .build()?;
-    
+
     hsm.start_tamper_monitoring();
-    
+
     let sess = hsm.create_session(SessionContext::default())?;
     println!(" Session ID: {}", sess);
     println!(" Session Timeout: {} seconds", SESSION_TIMEOUT_SECS);
-    
-    let key = hsm.generate_key(
-        &sess, 
-        KeyType::HybridAesDilithium,
-        KeyAttributes::default()
-    )?;
+
+    let key = hsm.generate_key(&sess, KeyType::HybridAesDilithium, KeyAttributes::default())?;
     println!(" Key Handle: {}", key);
     println!(" Key Type: Hybrid AES-256 + Dilithium5 (Quantum Resistant)");
-    
+
     let msg = b"SIRRAYA HSM - PRODUCTION VALIDATION";
-    println!("\n Message: \"{}\" ({} bytes)", String::from_utf8_lossy(msg), msg.len());
-    
+    println!(
+        "\n Message: \"{}\" ({} bytes)",
+        String::from_utf8_lossy(msg),
+        msg.len()
+    );
+
     let sig = hsm.sign(&sess, &key, msg)?;
     println!(" Signature: {} bytes", sig.len());
     println!(" Signature Hex: {}", hex::encode(&sig[..32]));
-    
+
     let ok = hsm.verify(&sess, &key, msg, &sig)?;
     println!(" Verification: {}", if ok { "PASSED" } else { "FAILED" });
-    
+
     let secret = b"CLASSIFIED - PHI/FINANCIAL/IOT";
-    println!("\n Plaintext: \"{}\" ({} bytes)", String::from_utf8_lossy(secret), secret.len());
-    
+    println!(
+        "\n Plaintext: \"{}\" ({} bytes)",
+        String::from_utf8_lossy(secret),
+        secret.len()
+    );
+
     let (cipher, nonce) = hsm.encrypt(&sess, &key, secret)?;
     println!(" Ciphertext: {} bytes", cipher.len());
     println!(" Cipher Hex: {}", hex::encode(&cipher[..32]));
     println!(" Nonce Hex: {}", hex::encode(&nonce));
-    
+
     let plain = hsm.decrypt(&sess, &key, &cipher, &nonce)?;
-    println!(" Decrypted: \"{}\" ({} bytes)", String::from_utf8_lossy(&plain), plain.len());
-    println!(" Integrity: {}", if secret == plain.as_slice() { "INTACT" } else { "CORRUPT" });
-    
+    println!(
+        " Decrypted: \"{}\" ({} bytes)",
+        String::from_utf8_lossy(&plain),
+        plain.len()
+    );
+    println!(
+        " Integrity: {}",
+        if secret == plain.as_slice() {
+            "INTACT"
+        } else {
+            "CORRUPT"
+        }
+    );
+
     let att = hsm.attest();
     println!("\n ATTESTATION");
     println!("  Serial: {}", att.serial);
@@ -1088,7 +1225,7 @@ fn main() -> Result<()> {
     println!("  Hardware Entropy: {}", att.entropy.hardware);
     println!("  Tampered: {}", att.tampered);
     println!("  Keys Stored: {}", att.storage.total_keys);
-    
+
     let m = hsm.metrics();
     println!("\n METRICS");
     println!("  Total Operations: {}", m["ops"]["total"]);
@@ -1102,11 +1239,11 @@ fn main() -> Result<()> {
     println!("  Keys Stored: {}", m["keys"]["stored"]);
     println!("  Max Key Slots: {}", m["keys"]["max"]);
     println!("  Uptime: {} seconds", m["hsm"]["uptime"]);
-    
+
     hsm.close_session(&sess)?;
     println!("\n{}", "-".repeat(64));
     println!("HSM OPERATIONAL - ZERO ERRORS");
     println!("All cryptographic operations completed successfully");
-    
+
     Ok(())
 }

@@ -2,19 +2,19 @@
 //! NIST FIPS 204 Post-Quantum Digital Signature Standard
 //! IANA Multicodec: 0x1212 (ML-DSA-87 public key) - Varint: [0x92, 0x24]
 
-use dilithium5::{Dilithium5, constants::*};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+use chrono::{Duration, Utc};
+use dilithium5::{constants::*, Dilithium5};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use uuid::Uuid;
-use chrono::{Utc, Duration};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 // ==================== MULTICODEC VARINT ENCODING ====================
 // IANA Multicodec Registry: https://www.iana.org/assignments/multicodec/multicodec.xhtml
 // ML-DSA-87 public key: 0x1212 (4626 decimal)
 // Unsigned varint encoding: [0x92, 0x24] (most significant bit set on all but last byte)
-const MLDSA87_PUBLIC_KEY_VARINT: [u8; 2] = [0x92, 0x24];  // Varint for 0x1212
+const MLDSA87_PUBLIC_KEY_VARINT: [u8; 2] = [0x92, 0x24]; // Varint for 0x1212
 
 // ==================== W3C VC + DID TYPES ====================
 
@@ -106,81 +106,87 @@ pub struct QuantumSafeIdentity {
 
 impl QuantumSafeIdentity {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let (public_key, secret_key): ([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]) = Dilithium5::keypair()?;
-        
+        let (public_key, secret_key): ([u8; PUBLICKEYBYTES], [u8; SECRETKEYBYTES]) =
+            Dilithium5::keypair()?;
+
         let did = Self::generate_did_from_public_key(&public_key);
-        
+
         Ok(Self {
             did,
             public_key,
             secret_key,
         })
     }
-    
-    pub fn from_keys(public_key: [u8; PUBLICKEYBYTES], secret_key: [u8; SECRETKEYBYTES]) -> Result<Self, Box<dyn std::error::Error>> {
+
+    pub fn from_keys(
+        public_key: [u8; PUBLICKEYBYTES],
+        secret_key: [u8; SECRETKEYBYTES],
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let did = Self::generate_did_from_public_key(&public_key);
-        
+
         Ok(Self {
             did,
             public_key,
             secret_key,
         })
     }
-    
+
     /// Generate did:key identifier from ML-DSA-87 (Dilithium5) public key
     /// Format: did:key:z<varint-ml-dsa-87-pub><public-key-bytes>
     /// IANA Multicodec: 0x1212 (ML-DSA-87 public key) - Varint: [0x92, 0x24]
     fn generate_did_from_public_key(public_key: &[u8; PUBLICKEYBYTES]) -> String {
         // Create multicodec buffer: varint [0x92, 0x24] + public_key
-        let mut multicodec_key = Vec::with_capacity(MLDSA87_PUBLIC_KEY_VARINT.len() + public_key.len());
+        let mut multicodec_key =
+            Vec::with_capacity(MLDSA87_PUBLIC_KEY_VARINT.len() + public_key.len());
         multicodec_key.extend_from_slice(&MLDSA87_PUBLIC_KEY_VARINT);
         multicodec_key.extend_from_slice(public_key);
-        
+
         // Base58BTC encoding for did:key method (per spec)
         let multibase = bs58::encode(multicodec_key).into_string();
-        
+
         format!("did:key:z{}", multibase)
     }
-    
+
     /// Extract public key from did:key identifier
     /// Verifies varint is ML-DSA-87 public key ([0x92, 0x24])
     pub fn extract_public_key_from_did(did: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         if !did.starts_with("did:key:z") {
             return Err("Invalid did:key format".into());
         }
-        
+
         let multibase = &did[8..]; // Remove "did:key:z" prefix
         let multicodec_key = bs58::decode(multibase).into_vec()?;
-        
+
         // Need at least varint prefix (2 bytes for 0x1212)
         if multicodec_key.len() < 2 {
             return Err("Invalid key length".into());
         }
-        
+
         // Verify it's ML-DSA-87 public key (check varint prefix)
         let prefix = &multicodec_key[0..2];
         if prefix != &MLDSA87_PUBLIC_KEY_VARINT {
             return Err("Not an ML-DSA-87 public key".into());
         }
-        
+
         // Return the public key bytes (after the varint prefix)
         Ok(multicodec_key[2..].to_vec())
     }
-    
+
     /// Generate key fingerprint (multibase encoded public key with varint)
     fn generate_fingerprint(&self) -> String {
-        let mut multicodec_key = Vec::with_capacity(MLDSA87_PUBLIC_KEY_VARINT.len() + self.public_key.len());
+        let mut multicodec_key =
+            Vec::with_capacity(MLDSA87_PUBLIC_KEY_VARINT.len() + self.public_key.len());
         multicodec_key.extend_from_slice(&MLDSA87_PUBLIC_KEY_VARINT);
         multicodec_key.extend_from_slice(&self.public_key);
-        
+
         // Base58BTC encoding for multibase (with z prefix for base58btc)
         format!("z{}", bs58::encode(multicodec_key).into_string())
     }
-    
+
     pub fn create_did_document(&self) -> DIDDocument {
         let fingerprint = self.generate_fingerprint();
         let verification_method_id = format!("{}#{}", self.did, fingerprint);
-        
+
         DIDDocument {
             context: vec![
                 "https://www.w3.org/ns/did/v1".to_string(),
@@ -206,7 +212,7 @@ impl QuantumSafeIdentity {
             }]),
         }
     }
-    
+
     pub fn issue_credential(
         &self,
         subject_did: &str,
@@ -217,19 +223,22 @@ impl QuantumSafeIdentity {
         let credential_id = format!("urn:uuid:{}", Uuid::new_v4());
         let issuance_date = Utc::now();
         let expiration_date = issuance_date + Duration::days(valid_days);
-        
+
         let credential_subject = CredentialSubject {
             id: subject_did.to_string(),
             claims,
         };
-        
+
         let mut vc = VerifiableCredential {
             context: vec![
                 "https://www.w3.org/2018/credentials/v1".to_string(),
                 "https://w3id.org/security/suites/ml-dsa-2025/v1".to_string(),
             ],
             id: credential_id.clone(),
-            vc_type: vec!["VerifiableCredential".to_string(), credential_type.to_string()],
+            vc_type: vec![
+                "VerifiableCredential".to_string(),
+                credential_type.to_string(),
+            ],
             issuer: self.did.clone(),
             issuance_date: issuance_date.to_rfc3339(),
             expiration_date: expiration_date.to_rfc3339(),
@@ -243,42 +252,45 @@ impl QuantumSafeIdentity {
                 jws: None,
             },
         };
-        
+
         let signed_proof = self.sign_credential(&vc)?;
         vc.proof = signed_proof;
-        
+
         Ok(vc)
     }
-    
-    fn sign_credential(&self, vc: &VerifiableCredential) -> Result<Proof, Box<dyn std::error::Error>> {
+
+    fn sign_credential(
+        &self,
+        vc: &VerifiableCredential,
+    ) -> Result<Proof, Box<dyn std::error::Error>> {
         let mut vc_copy = vc.clone();
         vc_copy.proof.proof_value = String::new();
-        
+
         // RFC 8785 JSON Canonicalization Scheme (JCS)
         let canonical_json = Self::canonicalize_json(&vc_copy)?;
-        
+
         let signature = Dilithium5::sign(&self.secret_key, canonical_json.as_bytes())?;
-        
+
         let proof_value = URL_SAFE_NO_PAD.encode(&signature);
-        
+
         Ok(Proof {
             proof_value,
             ..vc.proof.clone()
         })
     }
-    
+
     // RFC 8785 JSON Canonicalization Scheme (simplified)
     fn canonicalize_json<T: Serialize>(value: &T) -> Result<String, Box<dyn std::error::Error>> {
         let json_value = serde_json::to_value(value)?;
         Self::canonicalize_value(&json_value)
     }
-    
+
     fn canonicalize_value(value: &Value) -> Result<String, Box<dyn std::error::Error>> {
         match value {
             Value::Object(map) => {
                 let mut sorted_keys: Vec<_> = map.keys().collect();
                 sorted_keys.sort();
-                
+
                 let mut parts = Vec::new();
                 for key in sorted_keys {
                     let val = Self::canonicalize_value(&map[key])?;
@@ -287,9 +299,7 @@ impl QuantumSafeIdentity {
                 Ok(format!("{{{}}}", parts.join(",")))
             }
             Value::Array(arr) => {
-                let parts: Result<Vec<_>, _> = arr.iter()
-                    .map(Self::canonicalize_value)
-                    .collect();
+                let parts: Result<Vec<_>, _> = arr.iter().map(Self::canonicalize_value).collect();
                 Ok(format!("[{}]", parts?.join(",")))
             }
             Value::String(s) => Ok(format!("\"{}\"", s)),
@@ -298,27 +308,31 @@ impl QuantumSafeIdentity {
             Value::Null => Ok("null".to_string()),
         }
     }
-    
-    pub fn verify_credential(&self, vc: &VerifiableCredential) -> Result<bool, Box<dyn std::error::Error>> {
+
+    pub fn verify_credential(
+        &self,
+        vc: &VerifiableCredential,
+    ) -> Result<bool, Box<dyn std::error::Error>> {
         let signature_b64 = &vc.proof.proof_value;
         let signature_bytes = URL_SAFE_NO_PAD.decode(signature_b64)?;
-        
+
         if signature_bytes.len() != SIGNBYTES {
             return Err("Invalid signature length".into());
         }
-        
+
         let mut signature = [0u8; SIGNBYTES];
         signature.copy_from_slice(&signature_bytes);
-        
+
         let mut vc_without_proof = vc.clone();
         vc_without_proof.proof.proof_value = String::new();
-        
+
         let canonical_json = Self::canonicalize_json(&vc_without_proof)?;
-        
-        let verification_result = Dilithium5::verify(&self.public_key, canonical_json.as_bytes(), &signature)?;
+
+        let verification_result =
+            Dilithium5::verify(&self.public_key, canonical_json.as_bytes(), &signature)?;
         Ok(verification_result)
     }
-    
+
     pub fn create_verifiable_presentation(
         &self,
         credentials: Vec<VerifiableCredential>,
@@ -326,7 +340,7 @@ impl QuantumSafeIdentity {
         domain: &str,
     ) -> Result<VerifiablePresentation, Box<dyn std::error::Error>> {
         let created = Utc::now();
-        
+
         let mut proof = Proof {
             proof_type: "MLDSA87Signature2025".to_string(),
             created: created.to_rfc3339(),
@@ -335,7 +349,7 @@ impl QuantumSafeIdentity {
             proof_value: String::new(),
             jws: None,
         };
-        
+
         // Create proof options for signing (per Data Integrity spec)
         let proof_options = json!({
             "type": "MLDSA87Signature2025",
@@ -345,15 +359,15 @@ impl QuantumSafeIdentity {
             "challenge": challenge,
             "domain": domain
         });
-        
+
         // Sign the proof options (detached signature)
         let canonical_proof = Self::canonicalize_value(&proof_options)?;
         let signature = Dilithium5::sign(&self.secret_key, canonical_proof.as_bytes())?;
         let proof_value = URL_SAFE_NO_PAD.encode(&signature);
-        
+
         // Update proof with signature
         proof.proof_value = proof_value;
-        
+
         // Create the verifiable presentation
         let vp = VerifiablePresentation {
             context: vec![
@@ -364,22 +378,22 @@ impl QuantumSafeIdentity {
             verifiable_credential: credentials,
             proof,
         };
-        
+
         Ok(vp)
     }
-    
+
     pub fn get_did(&self) -> &str {
         &self.did
     }
-    
+
     pub fn get_public_key(&self) -> &[u8; PUBLICKEYBYTES] {
         &self.public_key
     }
-    
+
     pub fn get_public_key_vec(&self) -> Vec<u8> {
         self.public_key.to_vec()
     }
-    
+
     pub fn get_secret_key(&self) -> &[u8; SECRETKEYBYTES] {
         &self.secret_key
     }
@@ -400,82 +414,76 @@ impl FileManager {
         output_dir: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         std::fs::create_dir_all(output_dir)?;
-        
+
         // Save DID Documents
         let issuer_did_json = serde_json::to_string_pretty(&issuer_did_doc)?;
         std::fs::write(format!("{}/issuer_did.json", output_dir), &issuer_did_json)?;
-        
+
         let holder_did_json = serde_json::to_string_pretty(&holder_did_doc)?;
         std::fs::write(format!("{}/holder_did.json", output_dir), &holder_did_json)?;
-        
+
         // Save Verifiable Credential
         let vc_json = serde_json::to_string_pretty(&vc)?;
-        std::fs::write(format!("{}/verifiable_credential.json", output_dir), &vc_json)?;
-        
+        std::fs::write(
+            format!("{}/verifiable_credential.json", output_dir),
+            &vc_json,
+        )?;
+
         // Save Verifiable Presentation
         let vp_json = serde_json::to_string_pretty(&vp)?;
-        std::fs::write(format!("{}/verifiable_presentation.json", output_dir), &vp_json)?;
-        
+        std::fs::write(
+            format!("{}/verifiable_presentation.json", output_dir),
+            &vp_json,
+        )?;
+
         // Save public keys
-        std::fs::write(
-            format!("{}/issuer_public_key.bin", output_dir), 
-            issuer_pk
-        )?;
-        
-        std::fs::write(
-            format!("{}/holder_public_key.bin", output_dir), 
-            holder_pk
-        )?;
-        
+        std::fs::write(format!("{}/issuer_public_key.bin", output_dir), issuer_pk)?;
+
+        std::fs::write(format!("{}/holder_public_key.bin", output_dir), holder_pk)?;
+
         // Save hex versions
         std::fs::write(
-            format!("{}/issuer_public_key.hex", output_dir), 
-            hex::encode(issuer_pk)
+            format!("{}/issuer_public_key.hex", output_dir),
+            hex::encode(issuer_pk),
         )?;
-        
+
         std::fs::write(
-            format!("{}/holder_public_key.hex", output_dir), 
-            hex::encode(holder_pk)
+            format!("{}/holder_public_key.hex", output_dir),
+            hex::encode(holder_pk),
         )?;
-        
+
         // Save signatures
         let vc_signature = URL_SAFE_NO_PAD.decode(&vc.proof.proof_value)?;
+        std::fs::write(format!("{}/vc_signature.bin", output_dir), &vc_signature)?;
+
         std::fs::write(
-            format!("{}/vc_signature.bin", output_dir), 
-            &vc_signature
+            format!("{}/vc_signature.hex", output_dir),
+            hex::encode(&vc_signature),
         )?;
-        
-        std::fs::write(
-            format!("{}/vc_signature.hex", output_dir), 
-            hex::encode(&vc_signature)
-        )?;
-        
+
         let vp_signature = URL_SAFE_NO_PAD.decode(&vp.proof.proof_value)?;
+        std::fs::write(format!("{}/vp_signature.bin", output_dir), &vp_signature)?;
+
         std::fs::write(
-            format!("{}/vp_signature.bin", output_dir), 
-            &vp_signature
+            format!("{}/vp_signature.hex", output_dir),
+            hex::encode(&vp_signature),
         )?;
-        
-        std::fs::write(
-            format!("{}/vp_signature.hex", output_dir), 
-            hex::encode(&vp_signature)
-        )?;
-        
+
         // Generate and save verification report
         Self::generate_verification_report(vc, vp, issuer_pk, holder_pk, output_dir)?;
-        
+
         // Generate and save standards compliance report
         Self::generate_standards_report(output_dir)?;
-        
+
         // Generate and save technical specifications
         Self::generate_technical_specs(output_dir)?;
-        
+
         // Generate and save README with instructions
         Self::generate_readme(output_dir, vc, vp)?;
-        
+
         Ok(())
     }
-    
+
     fn generate_verification_report(
         vc: &VerifiableCredential,
         vp: &VerifiablePresentation,
@@ -485,7 +493,7 @@ impl FileManager {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let vc_signature_len = URL_SAFE_NO_PAD.decode(&vc.proof.proof_value)?.len();
         let vp_signature_len = URL_SAFE_NO_PAD.decode(&vp.proof.proof_value)?.len();
-        
+
         let report = json!({
             "verification_report": {
                 "generated": Utc::now().to_rfc3339(),
@@ -537,13 +545,16 @@ impl FileManager {
                 }
             }
         });
-        
+
         let report_json = serde_json::to_string_pretty(&report)?;
-        std::fs::write(format!("{}/verification_report.json", output_dir), report_json)?;
-        
+        std::fs::write(
+            format!("{}/verification_report.json", output_dir),
+            report_json,
+        )?;
+
         Ok(())
     }
-    
+
     fn generate_standards_report(output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
         let standards = json!({
             "standards_compliance_report": {
@@ -610,7 +621,7 @@ impl FileManager {
                         "security_level": "5",
                         "key_sizes": {
                             "public_key": "2592 bytes",
-                            "private_key": "4864 bytes", 
+                            "private_key": "4864 bytes",
                             "signature": "4595 bytes"
                         }
                     }
@@ -629,13 +640,16 @@ impl FileManager {
                 }
             }
         });
-        
+
         let standards_json = serde_json::to_string_pretty(&standards)?;
-        std::fs::write(format!("{}/standards_report.json", output_dir), standards_json)?;
-        
+        std::fs::write(
+            format!("{}/standards_report.json", output_dir),
+            standards_json,
+        )?;
+
         Ok(())
     }
-    
+
     fn generate_technical_specs(output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
         let specs = json!({
             "technical_specifications": {
@@ -699,13 +713,16 @@ impl FileManager {
                 }
             }
         });
-        
+
         let specs_json = serde_json::to_string_pretty(&specs)?;
-        std::fs::write(format!("{}/technical_specifications.json", output_dir), specs_json)?;
-        
+        std::fs::write(
+            format!("{}/technical_specifications.json", output_dir),
+            specs_json,
+        )?;
+
         Ok(())
     }
-    
+
     fn generate_readme(
         output_dir: &str,
         vc: &VerifiableCredential,
@@ -830,9 +847,9 @@ For verification issues or questions:
             SIGNBYTES,
             Utc::now().to_rfc3339()
         );
-        
+
         std::fs::write(format!("{}/README.md", output_dir), readme)?;
-        
+
         Ok(())
     }
 }
@@ -846,56 +863,61 @@ impl IdentityDemo {
         println!("{}", "=".repeat(70));
         println!("QUANTUM-SAFE W3C VERIFIABLE CREDENTIALS + DID DEMO");
         println!("{}", "=".repeat(70));
-        
+
         println!("\n1. Creating Issuer Identity...");
         let issuer = QuantumSafeIdentity::new()?;
         println!("   Issuer DID: {}", issuer.get_did());
         println!("   IANA Multicodec: 0x1212 (ML-DSA-87 public key)");
         println!("   Varint Encoding: [0x92, 0x24]");
-        
+
         println!("\n2. Creating Holder Identity...");
         let holder = QuantumSafeIdentity::new()?;
         println!("   Holder DID: {}", holder.get_did());
-        
+
         println!("\n3. Generating DID Documents...");
         let issuer_did_doc = issuer.create_did_document();
         let holder_did_doc = holder.create_did_document();
-        
-        println!("   Issuer DID Document generated ({} bytes)", 
-                 serde_json::to_string(&issuer_did_doc)?.len());
-        println!("   Holder DID Document generated ({} bytes)", 
-                 serde_json::to_string(&holder_did_doc)?.len());
-        
+
+        println!(
+            "   Issuer DID Document generated ({} bytes)",
+            serde_json::to_string(&issuer_did_doc)?.len()
+        );
+        println!(
+            "   Holder DID Document generated ({} bytes)",
+            serde_json::to_string(&holder_did_doc)?.len()
+        );
+
         println!("\n4. Issuing Quantum-Safe Verifiable Credential...");
-        
+
         let mut claims = HashMap::new();
         claims.insert("name".to_string(), json!("Alice Johnson"));
         claims.insert("age".to_string(), json!(30));
         claims.insert("email".to_string(), json!("alice@example.com"));
-        claims.insert("degree".to_string(), json!({
-            "type": "BachelorDegree",
-            "name": "Bachelor of Science in Computer Science",
-            "institution": "Quantum University"
-        }));
-        
-        let vc = issuer.issue_credential(
-            holder.get_did(),
-            claims,
-            "UniversityDegreeCredential",
-            365,
-        )?;
-        
+        claims.insert(
+            "degree".to_string(),
+            json!({
+                "type": "BachelorDegree",
+                "name": "Bachelor of Science in Computer Science",
+                "institution": "Quantum University"
+            }),
+        );
+
+        let vc =
+            issuer.issue_credential(holder.get_did(), claims, "UniversityDegreeCredential", 365)?;
+
         println!("   VC ID: {}", vc.id);
         println!("   Issuer: {}", vc.issuer);
         println!("   Subject: {}", vc.credential_subject.id);
         println!("   Expires: {}", vc.expiration_date);
         println!("   Proof Type: {}", vc.proof.proof_type);
-        println!("   Proof Value (first 64 chars): {}...", 
-                &vc.proof.proof_value[..64.min(vc.proof.proof_value.len())]);
-        
+        println!(
+            "   Proof Value (first 64 chars): {}...",
+            &vc.proof.proof_value[..64.min(vc.proof.proof_value.len())]
+        );
+
         println!("\n5. Verifying the Credential...");
         let is_valid = issuer.verify_credential(&vc)?;
-        
+
         if is_valid {
             println!("   CREDENTIAL VERIFICATION SUCCESSFUL");
             println!("   ML-DSA-87 signature valid");
@@ -904,22 +926,25 @@ impl IdentityDemo {
         } else {
             println!("   CREDENTIAL VERIFICATION FAILED");
         }
-        
+
         println!("\n6. Creating Verifiable Presentation...");
         let vp = holder.create_verifiable_presentation(
             vec![vc.clone()],
             "random-challenge-123",
             "example.com",
         )?;
-        
-        println!("   VP contains {} credential(s)", vp.verifiable_credential.len());
+
+        println!(
+            "   VP contains {} credential(s)",
+            vp.verifiable_credential.len()
+        );
         println!("   Challenge: random-challenge-123");
         println!("   Domain: example.com");
-        
+
         println!("\n7. Saving All Files and Reports...");
-        
+
         let output_dir = "quantum_identity_output";
-        
+
         FileManager::save_all_files(
             &issuer_did_doc,
             &holder_did_doc,
@@ -929,7 +954,7 @@ impl IdentityDemo {
             holder.get_public_key(),
             output_dir,
         )?;
-        
+
         println!("   Saved to directory: {}", output_dir);
         println!("   Total files generated: 15");
         println!("   Files include:");
@@ -939,18 +964,18 @@ impl IdentityDemo {
         println!("     • 4 Signature files (binary + hex)");
         println!("     • 3 Detailed reports (JSON) with IANA references");
         println!("     • README with instructions");
-        
+
         println!("\n{}", "=".repeat(70));
         println!("QUANTUM-SAFE IDENTITY SYSTEM STATUS");
         println!("{}", "=".repeat(70));
-        
+
         println!("\nSTANDARDS COMPLIANCE:");
         println!("   W3C Decentralized Identifiers (DID) v1.0 (did:key)");
         println!("   W3C Verifiable Credentials Data Model v1.1");
         println!("   IETF RFC 7515 (JOSE) Base64URL Encoding");
         println!("   IANA Multicodec Registry (0x1212 for ML-DSA-87, varint: 0x9224)");
         println!("   NIST FIPS 204 (ML-DSA)");
-        
+
         println!("\nCRYPTOGRAPHIC PROPERTIES:");
         println!("   Post-Quantum Secure (Lattice-based)");
         println!("   NIST Standardized (FIPS 204 ML-DSA-87)");
@@ -958,21 +983,21 @@ impl IdentityDemo {
         println!("   {} byte public keys", PUBLICKEYBYTES);
         println!("   {} byte signatures", SIGNBYTES);
         println!("   Deterministic signing");
-        
+
         println!("\nFUNCTIONAL CAPABILITIES:");
         println!("   DID Document generation with IANA multicodec");
         println!("   Verifiable Credential issuance");
         println!("   Credential verification");
         println!("   Verifiable Presentation creation");
         println!("   Challenge/Response authentication");
-        
+
         println!("\nSECURITY GUARANTEES:");
         println!("   Quantum computer resistance");
         println!("   Cryptographic non-repudiation");
         println!("   Tamper-evident credentials");
         println!("   Issuer authentication");
         println!("   Credential integrity");
-        
+
         println!("\nUSE CASES ENABLED:");
         println!("   Quantum-safe digital identities");
         println!("   Verifiable academic credentials");
@@ -982,18 +1007,21 @@ impl IdentityDemo {
         println!("   Financial KYC/AML compliance");
         println!("   IoT device identities");
         println!("   Government digital IDs");
-        
+
         println!("\nOUTPUT DETAILS:");
         println!("   Directory: {}", output_dir);
         println!("   Issuer DID: {}", issuer.get_did());
         println!("   Holder DID: {}", holder.get_did());
         println!("   Credential ID: {}", vc.id);
-        println!("   Signature Size: {} bytes", URL_SAFE_NO_PAD.decode(&vc.proof.proof_value)?.len());
-        
+        println!(
+            "   Signature Size: {} bytes",
+            URL_SAFE_NO_PAD.decode(&vc.proof.proof_value)?.len()
+        );
+
         println!("\n{}", "=".repeat(70));
         println!("PRODUCTION-READY QUANTUM-SAFE IDENTITY SYSTEM");
         println!("{}", "=".repeat(70));
-        
+
         // Display summary of generated files
         println!("\nGENERATED FILES SUMMARY:");
         let entries = std::fs::read_dir(output_dir)?;
@@ -1002,28 +1030,32 @@ impl IdentityDemo {
                 let path = entry.path();
                 if let Some(file_name) = path.file_name() {
                     let metadata = std::fs::metadata(&path)?;
-                    println!("   • {} ({} bytes)", file_name.to_string_lossy(), metadata.len());
+                    println!(
+                        "   • {} ({} bytes)",
+                        file_name.to_string_lossy(),
+                        metadata.len()
+                    );
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     pub fn generate_sample_files() -> Result<(), Box<dyn std::error::Error>> {
         let identity = QuantumSafeIdentity::new()?;
-        
+
         let mut claims = HashMap::new();
         claims.insert("name".to_string(), json!("Quantum Citizen"));
         claims.insert("verified".to_string(), json!(true));
-        
+
         let vc = identity.issue_credential(
             "did:key:z92J24...", // Placeholder
             claims,
             "BasicIdentityCredential",
             90,
         )?;
-        
+
         let sample = json!({
             "metadata": {
                 "description": "Sample Quantum-Safe W3C Verifiable Credential",
@@ -1048,14 +1080,14 @@ impl IdentityDemo {
                 "file_count": "15 files including reports and binaries"
             }
         });
-        
+
         let sample_json = serde_json::to_string_pretty(&sample)?;
         std::fs::write("quantum_safe_sample.json", sample_json)?;
-        
+
         println!("Generated sample file: quantum_safe_sample.json");
         println!("For complete file generation with reports, run:");
         println!("cargo run --release");
-        
+
         Ok(())
     }
 }
@@ -1064,13 +1096,13 @@ impl IdentityDemo {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Initializing Quantum-Safe Digital Identity System...\n");
-    
+
     let args: Vec<String> = std::env::args().collect();
     if args.len() > 1 && args[1] == "--sample" {
         IdentityDemo::generate_sample_files()?;
         return Ok(());
     }
-    
+
     match IdentityDemo::run_full_demo() {
         Ok(_) => {
             println!("\nDEMO COMPLETED SUCCESSFULLY");
@@ -1094,7 +1126,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Err(e);
         }
     }
-    
+
     Ok(())
 }
 
@@ -1103,7 +1135,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_quantum_safe_identity_creation() -> Result<(), Box<dyn std::error::Error>> {
         let identity = QuantumSafeIdentity::new()?;
@@ -1111,67 +1143,54 @@ mod tests {
         assert!(identity.get_did().starts_with("did:key:z"));
         Ok(())
     }
-    
+
     #[test]
     fn test_vc_issuance_and_verification() -> Result<(), Box<dyn std::error::Error>> {
         let issuer = QuantumSafeIdentity::new()?;
-        
+
         let mut claims = HashMap::new();
         claims.insert("test".to_string(), json!("value"));
-        
-        let vc = issuer.issue_credential(
-            "did:key:z92J24...",
-            claims,
-            "TestCredential",
-            1,
-        )?;
-        
+
+        let vc = issuer.issue_credential("did:key:z92J24...", claims, "TestCredential", 1)?;
+
         let is_valid = issuer.verify_credential(&vc)?;
         assert!(is_valid, "Credential should be valid");
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_vp_creation() -> Result<(), Box<dyn std::error::Error>> {
         let holder = QuantumSafeIdentity::new()?;
-        
-        let vp = holder.create_verifiable_presentation(
-            Vec::new(),
-            "test-challenge",
-            "test-domain",
-        )?;
-        
+
+        let vp =
+            holder.create_verifiable_presentation(Vec::new(), "test-challenge", "test-domain")?;
+
         assert_eq!(vp.vp_type, vec!["VerifiablePresentation"]);
         assert_eq!(vp.proof.proof_purpose, "authentication");
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_file_manager_saves_all_files() -> Result<(), Box<dyn std::error::Error>> {
         let issuer = QuantumSafeIdentity::new()?;
         let holder = QuantumSafeIdentity::new()?;
-        
+
         let issuer_did_doc = issuer.create_did_document();
         let holder_did_doc = holder.create_did_document();
-        
+
         let mut claims = HashMap::new();
         claims.insert("test".to_string(), json!("value"));
-        
-        let vc = issuer.issue_credential(
-            holder.get_did(),
-            claims.clone(),
-            "TestCredential",
-            1,
-        )?;
-        
+
+        let vc = issuer.issue_credential(holder.get_did(), claims.clone(), "TestCredential", 1)?;
+
         let vp = holder.create_verifiable_presentation(
             vec![vc.clone()],
             "test-challenge",
             "test-domain",
         )?;
-        
+
         let test_dir = "test_output";
         FileManager::save_all_files(
             &issuer_did_doc,
@@ -1182,43 +1201,43 @@ mod tests {
             holder.get_public_key(),
             test_dir,
         )?;
-        
+
         // Check that files were created
         assert!(std::fs::metadata(format!("{}/issuer_did.json", test_dir)).is_ok());
         assert!(std::fs::metadata(format!("{}/verifiable_credential.json", test_dir)).is_ok());
         assert!(std::fs::metadata(format!("{}/verification_report.json", test_dir)).is_ok());
         assert!(std::fs::metadata(format!("{}/README.md", test_dir)).is_ok());
-        
+
         // Clean up
         let _ = std::fs::remove_dir_all(test_dir);
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_did_key_generation_and_extraction() -> Result<(), Box<dyn std::error::Error>> {
         let identity = QuantumSafeIdentity::new()?;
         let did = identity.get_did();
-        
+
         // Extract public key from did
         let extracted_pk = QuantumSafeIdentity::extract_public_key_from_did(did)?;
-        
+
         // Should match original public key
         assert_eq!(extracted_pk.as_slice(), &identity.public_key[..]);
-        
+
         Ok(())
     }
-    
+
     #[test]
     fn test_varint_prefix_correctness() -> Result<(), Box<dyn std::error::Error>> {
         // Test that the varint prefix is correct for 0x1212
         let identity = QuantumSafeIdentity::new()?;
         let fingerprint = identity.generate_fingerprint();
-        
+
         // Decode the fingerprint to check prefix
         let decoded = bs58::decode(&fingerprint[1..]).into_vec()?;
         assert_eq!(&decoded[0..2], &MLDSA87_PUBLIC_KEY_VARINT);
-        
+
         Ok(())
     }
 }

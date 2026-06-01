@@ -3,7 +3,10 @@
 // Corrected for your implementation's SK layout
 
 use dilithium5::Dilithium5;
-use sha3::{Shake256, digest::{Update, ExtendableOutput, XofReader}};
+use sha3::{
+    digest::{ExtendableOutput, Update, XofReader},
+    Shake256,
+};
 
 fn hex_display(data: &[u8]) -> String {
     data.iter().map(|b| format!("{:02x}", b)).collect()
@@ -18,33 +21,24 @@ const ZERO_SEED: [u8; 32] = [0x00; 32];
 
 // Expected values from your SHAKE-256 expansion (which is correct!)
 const EXPECTED_RHO: [u8; 32] = [
-    0x00, 0x68, 0x77, 0x35, 0x26, 0x23, 0xcc, 0xdb,
-    0x31, 0xc7, 0xd3, 0x82, 0xa6, 0x46, 0x98, 0x3d,
-    0xea, 0xbc, 0x4d, 0x3a, 0xf7, 0x3c, 0x9a, 0x66,
-    0x84, 0x19, 0xae, 0x56, 0x78, 0x71, 0x34, 0xa9
+    0x00, 0x68, 0x77, 0x35, 0x26, 0x23, 0xcc, 0xdb, 0x31, 0xc7, 0xd3, 0x82, 0xa6, 0x46, 0x98, 0x3d,
+    0xea, 0xbc, 0x4d, 0x3a, 0xf7, 0x3c, 0x9a, 0x66, 0x84, 0x19, 0xae, 0x56, 0x78, 0x71, 0x34, 0xa9,
 ];
 
 const EXPECTED_RHO_PRIME: [u8; 64] = [
-    0x93, 0x42, 0xaa, 0x21, 0x34, 0xe8, 0x20, 0x19,
-    0x2e, 0xe4, 0x66, 0x74, 0x41, 0x44, 0xdf, 0xc3,
-    0xc0, 0x95, 0xc2, 0x5d, 0x62, 0x00, 0x68, 0x13,
-    0xf5, 0xe8, 0x7b, 0xc6, 0xd9, 0x8b, 0x67, 0xc5,
-    0x5f, 0x2a, 0x8f, 0x1c, 0x3e, 0x4a, 0x5b, 0x6c,
-    0x7d, 0x8e, 0x9f, 0xa0, 0xb1, 0xc2, 0xd3, 0xe4,
-    0xf5, 0x06, 0x17, 0x28, 0x39, 0x4a, 0x5b, 0x6c,
-    0x7d, 0x8e, 0x9f, 0xa0, 0xb1, 0xc2, 0xd3, 0xe4
+    0x93, 0x42, 0xaa, 0x21, 0x34, 0xe8, 0x20, 0x19, 0x2e, 0xe4, 0x66, 0x74, 0x41, 0x44, 0xdf, 0xc3,
+    0xc0, 0x95, 0xc2, 0x5d, 0x62, 0x00, 0x68, 0x13, 0xf5, 0xe8, 0x7b, 0xc6, 0xd9, 0x8b, 0x67, 0xc5,
+    0x5f, 0x2a, 0x8f, 0x1c, 0x3e, 0x4a, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f, 0xa0, 0xb1, 0xc2, 0xd3, 0xe4,
+    0xf5, 0x06, 0x17, 0x28, 0x39, 0x4a, 0x5b, 0x6c, 0x7d, 0x8e, 0x9f, 0xa0, 0xb1, 0xc2, 0xd3, 0xe4,
 ];
 
 const EXPECTED_K: [u8; 32] = [
-    0x06, 0x4d, 0x04, 0xd7, 0xf0, 0xdf, 0x1b, 0xa0,
-    0xed, 0xcc, 0xfc, 0x2b, 0x82, 0x51, 0xaf, 0xa5,
-    0x71, 0xe7, 0x7b, 0x7a, 0x3b, 0xc0, 0xfc, 0x88,
-    0xf0, 0x29, 0x60, 0x34, 0xa2, 0x36, 0x17, 0xa3
+    0x06, 0x4d, 0x04, 0xd7, 0xf0, 0xdf, 0x1b, 0xa0, 0xed, 0xcc, 0xfc, 0x2b, 0x82, 0x51, 0xaf, 0xa5,
+    0x71, 0xe7, 0x7b, 0x7a, 0x3b, 0xc0, 0xfc, 0x88, 0xf0, 0x29, 0x60, 0x34, 0xa2, 0x36, 0x17, 0xa3,
 ];
 
 const EXPECTED_TR_PREFIX: [u8; 16] = [
-    0x4b, 0x41, 0xa1, 0x27, 0xfc, 0x5d, 0x2d, 0xf5,
-    0xae, 0xc8, 0x5e, 0x0a, 0x77, 0x0a, 0xb4, 0xb0
+    0x4b, 0x41, 0xa1, 0x27, 0xfc, 0x5d, 0x2d, 0xf5, 0xae, 0xc8, 0x5e, 0x0a, 0x77, 0x0a, 0xb4, 0xb0,
 ];
 
 fn main() {
@@ -52,17 +46,17 @@ fn main() {
     println!("║     FIPS 204 ML-DSA-87 Known Answer Test (KAT)                 ║");
     println!("║     Corrected for Implementation                               ║");
     println!("╚══════════════════════════════════════════════════════════════════╝\n");
-    
+
     let mut passed = 0;
     let mut total = 0;
-    
+
     // ========================================================================
     // Test 1: Key Generation with Zero Seed
     // ========================================================================
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("Test 1: Key Generation with Zero Seed");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-    
+
     let (pk, sk) = match Dilithium5::keypair_from_seed(&ZERO_SEED) {
         Ok(kp) => kp,
         Err(e) => {
@@ -70,7 +64,7 @@ fn main() {
             return;
         }
     };
-    
+
     total += 1;
     // Test 1a: ρ (public key seed)
     println!("Test 1a: ρ (Public Key Seed)");
@@ -83,7 +77,7 @@ fn main() {
         println!("  ✗ FAIL: ρ mismatch");
     }
     println!();
-    
+
     total += 1;
     // Test 1b: K (key material) - This is at sk[32..64]
     println!("Test 1b: K (Key Material in SK)");
@@ -96,7 +90,7 @@ fn main() {
         println!("  ✗ FAIL: K mismatch");
     }
     println!();
-    
+
     total += 1;
     // Test 1c: tr (hash of public key)
     println!("Test 1c: tr = SHAKE-256(pk, 64)");
@@ -109,7 +103,7 @@ fn main() {
         println!("  ✗ FAIL: tr mismatch");
     }
     println!();
-    
+
     total += 1;
     // Test 1d: Consistency check
     println!("Test 1d: PK ρ == SK ρ");
@@ -120,14 +114,14 @@ fn main() {
         println!("  ✗ FAIL: ρ mismatch between PK and SK");
     }
     println!();
-    
+
     // ========================================================================
     // Test 2: SHAKE-256 Expansion Verification
     // ========================================================================
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("Test 2: SHAKE-256 Expansion Verification");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-    
+
     total += 1;
     let mut hasher = Shake256::default();
     hasher.update(&ZERO_SEED);
@@ -135,13 +129,13 @@ fn main() {
     hasher.update(&[0x00]);
     let mut expanded = [0u8; 128];
     hasher.finalize_xof().read(&mut expanded);
-    
+
     println!("Test 2a: SHAKE-256(ξ || 0x02 || 0x00, 128)");
     println!("  ρ (first 32):   {}", hex_display(&expanded[0..32]));
     println!("  Expected ρ:     {}", hex_display(&EXPECTED_RHO));
     println!("  ρ' (first 16):  {}", hex_display(&expanded[32..48]));
     println!("  K (last 32):    {}", hex_display(&expanded[96..128]));
-    
+
     if expanded[0..32] == EXPECTED_RHO {
         println!("  ✓ PASS: SHAKE-256 expansion correct");
         passed += 1;
@@ -149,14 +143,14 @@ fn main() {
         println!("  ✗ FAIL: SHAKE-256 expansion incorrect");
     }
     println!();
-    
+
     // ========================================================================
     // Test 3: Deterministic Signing
     // ========================================================================
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("Test 3: Deterministic Signing");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-    
+
     total += 1;
     let test_msg = b"FIPS 204 ML-DSA-87 Test Vector";
     let sig = match Dilithium5::sign_deterministic(&sk, test_msg) {
@@ -166,12 +160,12 @@ fn main() {
             return;
         }
     };
-    
+
     println!("Test 3a: Signature Generation");
     println!("  Message: \"{}\"", String::from_utf8_lossy(test_msg));
     println!("  Signature size: {} bytes", sig.len());
     println!("  c̃ (first 32 bytes): {}", hex_n(&sig, 32));
-    
+
     match Dilithium5::verify(&pk, test_msg, &sig) {
         Ok(true) => {
             println!("  Verification: ✓ PASS");
@@ -185,42 +179,69 @@ fn main() {
         }
     }
     println!();
-    
+
     // ========================================================================
     // Test 4: Invalid Signature Rejection
     // ========================================================================
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("Test 4: Invalid Signature Rejection");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-    
+
     total += 1;
     // Test 4a: Wrong message
     let wrong_msg = b"Wrong message";
     let valid_wrong = Dilithium5::verify(&pk, wrong_msg, &sig).unwrap();
     println!("Test 4a: Wrong message");
-    println!("  Result: {}", if !valid_wrong { "✓ REJECTED" } else { "✗ ACCEPTED" });
-    if !valid_wrong { passed += 1; }
+    println!(
+        "  Result: {}",
+        if !valid_wrong {
+            "✓ REJECTED"
+        } else {
+            "✗ ACCEPTED"
+        }
+    );
+    if !valid_wrong {
+        passed += 1;
+    }
     println!();
-    
+
     total += 1;
     // Test 4b: Tampered signature
     let mut tampered = sig.clone();
     tampered[100] ^= 0xFF;
     let valid_tampered = Dilithium5::verify(&pk, test_msg, &tampered).unwrap();
     println!("Test 4b: Tampered signature (bit flip)");
-    println!("  Result: {}", if !valid_tampered { "✓ REJECTED" } else { "✗ ACCEPTED" });
-    if !valid_tampered { passed += 1; }
+    println!(
+        "  Result: {}",
+        if !valid_tampered {
+            "✓ REJECTED"
+        } else {
+            "✗ ACCEPTED"
+        }
+    );
+    if !valid_tampered {
+        passed += 1;
+    }
     println!();
-    
+
     total += 1;
     // Test 4c: Wrong public key
     let (wrong_pk, _) = Dilithium5::keypair().unwrap();
     let valid_wrong_pk = Dilithium5::verify(&wrong_pk, test_msg, &sig).unwrap();
     println!("Test 4c: Wrong public key");
-    println!("  Result: {}", if !valid_wrong_pk { "✓ REJECTED" } else { "✗ ACCEPTED" });
-    if !valid_wrong_pk { passed += 1; }
+    println!(
+        "  Result: {}",
+        if !valid_wrong_pk {
+            "✓ REJECTED"
+        } else {
+            "✗ ACCEPTED"
+        }
+    );
+    if !valid_wrong_pk {
+        passed += 1;
+    }
     println!();
-    
+
     // ========================================================================
     // Summary
     // ========================================================================
@@ -245,7 +266,7 @@ fn main() {
         println!("    ρ' is NOT stored in SK - it's derived from ρ");
     }
     println!("╚══════════════════════════════════════════════════════════════════╝\n");
-    
+
     if passed != total {
         std::process::exit(1);
     }
