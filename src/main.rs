@@ -9,7 +9,10 @@ fn main() {
         Ok((_pk, _sk)) => {
             println!("Key generation: OK");
             println!("Signature Size: {} bytes", sirraya_ml_dsa_65::SIGNBYTES);
-            println!("Public Key Size: {} bytes", sirraya_ml_dsa_65::PUBLICKEYBYTES);
+            println!(
+                "Public Key Size: {} bytes",
+                sirraya_ml_dsa_65::PUBLICKEYBYTES
+            );
         }
         Err(e) => println!("Error: {}", e),
     }
