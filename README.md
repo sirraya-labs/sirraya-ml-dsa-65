@@ -164,4 +164,3 @@ MIT License. See [LICENSE](LICENSE).
 - [W3C VC Data Model](https://www.w3.org/TR/vc-data-model-2.0/) -- Verifiable Credentials
 - [W3C Data Integrity](https://www.w3.org/TR/vc-data-integrity/) -- Proof Specification
 - [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785) -- JSON Canonicalization Scheme
-```
