@@ -326,9 +326,11 @@ dependencies = [
 name = "sirraya-ml-dsa-65-wasm"
 version = "0.1.0"
 dependencies = [
+ "bs58",
  "getrandom",
  "hex",
  "serde_json",
+ "sha3",
  "sirraya-ml-dsa-65",
  "wasm-bindgen",
 ]

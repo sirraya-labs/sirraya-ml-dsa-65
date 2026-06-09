@@ -64,6 +64,11 @@ name = "mldsa-65-vc-generate"
 path = "examples/mldsa-65-vc-generate.rs"
 required-features = ["w3c"]
 
+[[example]]
+name = "generate_test_vectors"
+path = "examples/generate_test_vectors.rs"
+required-features = ["w3c"]
+
 
 
 # ============ BINARIES ============
