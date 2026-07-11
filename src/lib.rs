@@ -1,10 +1,6 @@
 // src/lib.rs
 //! ML-DSA-65 Post-Quantum Cryptography Implementation (FIPS 204)
-//!
-//! This crate provides two versions:
-//! - Standard implementation (in `ml_dsa_65` module) - Fast, unmasked ML-DSA-65
-//! - Masked implementation (in `dilithium_masked` module) - Side-channel resistant
-//!   (kept for legacy compatibility)
+
 
 pub mod constants;
 pub mod ml_dsa_65;
